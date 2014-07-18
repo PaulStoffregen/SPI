@@ -23,6 +23,7 @@ setSCK	KEYWORD2
 usingInterrupt	KEYWORD2
 beginTransaction	KEYWORD2
 endTransaction	KEYWORD2
+SPISettings	KEYWORD2
 
 #######################################
 # Constants (LITERAL1)

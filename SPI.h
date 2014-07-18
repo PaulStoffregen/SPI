@@ -75,11 +75,26 @@ public:
 		SPSR = (clockDiv >> 2) & SPI_2XCLOCK_MASK;
 	}
 
-	// Write a byte to the SPI bus (MOSI pin) and also receive (MISO pin)
+	// Write to the SPI bus (MOSI pin) and also receive (MISO pin)
 	inline static byte transfer(byte data) {
 		SPDR = data;
+		asm volatile("nop");
 		while (!(SPSR & _BV(SPIF))) ; // wait
 		return SPDR;
+	}
+	inline static void transfer(void *buf, size_t count) {
+		if (count == 0) return;
+		uint8_t *p = (uint8_t *)buf;
+		SPDR = *p;
+		while (--count > 0) {
+			uint8_t out = *(p + 1);
+			while (!(SPSR & _BV(SPIF))) ;
+			uint8_t in = SPDR;
+			SPDR = out;
+			*p++ = in;
+		}
+		while (!(SPSR & _BV(SPIF))) ;
+		*p = SPDR;
 	}
 
 	// After performing a group of transfers and releasing the chip select

@@ -86,7 +86,7 @@ private:
 
 		// When the clock is known at compiletime, use this if-then-else
 		// cascade, which the compiler knows how to completely optimize
-		// away. When clock is not know, use a loop instead, which generates
+		// away. When clock is not known, use a loop instead, which generates
 		// shorter code.
 		if (__builtin_constant_p(clock)) {
 			if (clock >= F_CPU / 2) {

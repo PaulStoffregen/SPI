@@ -30,6 +30,13 @@
 #endif
 #endif
 
+#ifndef LSBFIRST
+#define LSBFIRST 0
+#endif
+#ifndef MSBFIRST
+#define MSBFIRST 1
+#endif
+
 #define SPI_MODE0 0x00
 #define SPI_MODE1 0x04
 #define SPI_MODE2 0x08

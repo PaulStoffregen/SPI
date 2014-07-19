@@ -56,6 +56,9 @@ public:
 			init_MightInline(clock, bitOrder, dataMode);
 		}
 	}
+	SPISettings() {
+		init_AlwaysInline(4000000, MSBFIRST, SPI_MODE0);
+	}
 private:
 	void init_MightInline(uint32_t clock, uint8_t bitOrder, uint8_t dataMode) {
 		init_AlwaysInline(clock, bitOrder, dataMode);

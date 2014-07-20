@@ -442,9 +442,16 @@ public:
 
 	// Write to the SPI bus (MOSI pin) and also receive (MISO pin)
 	inline static uint8_t transfer(uint8_t data) {
-		SPDR = data;
-		while (!(SPSR & _BV(SPIF))) ; // wait
-		return SPDR;
+		SPI0_SR = SPI_SR_TCF;
+		SPI0_PUSHR = data;
+		while (!(SPI0_SR & SPI_SR_TCF)) ; // wait
+		return SPI0_POPR;
+	}
+	inline static uint8_t transfer16(uint16_t data) {
+		SPI0_SR = SPI_SR_TCF;
+		SPI0_PUSHR = data | SPI_PUSHR_CTAS(1);
+		while (!(SPI0_SR & SPI_SR_TCF)) ; // wait
+		return SPI0_POPR;
 	}
 	inline static void transfer(void *buf, size_t count) {
 		if (count == 0) return;

@@ -13,13 +13,19 @@
 
 SPIClass SPI;
 
+
+/**********************************************************/
+/*     8 bit AVR-based boards                             */
+/**********************************************************/
+
+#if defined(__AVR__)
+
 uint8_t SPIClass::interruptMode = 0;
 uint8_t SPIClass::interruptMask = 0;
 uint8_t SPIClass::interruptSave = 0;
 
 void SPIClass::begin()
 {
-#if defined(__AVR__)
 	// Set SS to high so a connected chip will be "deselected" by default
 	digitalWrite(SS, HIGH);
 
@@ -42,23 +48,10 @@ void SPIClass::begin()
 	// http://code.google.com/p/arduino/issues/detail?id=888
 	pinMode(SCK, OUTPUT);
 	pinMode(MOSI, OUTPUT);
-#elif defined(__arm__) && defined(TEENSYDUINO)
-	SIM_SCGC6 |= SIM_SCGC6_SPI0;
-	SPI0_MCR = SPI_MCR_MDIS | SPI_MCR_HALT | SPI_MCR_PCSIS(0x1F);
-	SPI0_CTAR0 = SPI_CTAR_FMSZ(7) | SPI_CTAR_PBR(0) | SPI_CTAR_BR(1) | SPI_CTAR_CSSCK(1);
-	SPI0_CTAR1 = SPI_CTAR_FMSZ(15) | SPI_CTAR_PBR(0) | SPI_CTAR_BR(1) | SPI_CTAR_CSSCK(1);
-	SPI0_MCR = SPI_MCR_MSTR | SPI_MCR_PCSIS(0x1F);
-	SPCR.enable_pins(); // pins managed by SPCRemulation in avr_emulation.h
-#endif
 }
 
 void SPIClass::end() {
-#if defined(__AVR__)
 	SPCR &= ~_BV(SPE);
-#elif defined(__arm__) && defined(TEENSYDUINO)
-	SPCR.disable_pins();
-	SPI0_MCR = SPI_MCR_MDIS | SPI_MCR_HALT | SPI_MCR_PCSIS(0x1F);
-#endif
 }
 
 void SPIClass::usingInterrupt(uint8_t interruptNumber)
@@ -104,7 +97,43 @@ void SPIClass::usingInterrupt(uint8_t interruptNumber)
 }
 
 
-#if defined(__arm__) && defined(TEENSYDUINO)
+/**********************************************************/
+/*     32 bit Teensy 3.0 and 3.1                          */
+/**********************************************************/
+
+#elif defined(__arm__) && defined(TEENSYDUINO)
+
+uint8_t SPIClass::interruptMode = 0;
+uint8_t SPIClass::interruptMask = 0;
+uint8_t SPIClass::interruptSave = 0;
+
+void SPIClass::begin()
+{
+	SIM_SCGC6 |= SIM_SCGC6_SPI0;
+	SPI0_MCR = SPI_MCR_MDIS | SPI_MCR_HALT | SPI_MCR_PCSIS(0x1F);
+	SPI0_CTAR0 = SPI_CTAR_FMSZ(7) | SPI_CTAR_PBR(0) | SPI_CTAR_BR(1) | SPI_CTAR_CSSCK(1);
+	SPI0_CTAR1 = SPI_CTAR_FMSZ(15) | SPI_CTAR_PBR(0) | SPI_CTAR_BR(1) | SPI_CTAR_CSSCK(1);
+	SPI0_MCR = SPI_MCR_MSTR | SPI_MCR_PCSIS(0x1F);
+	SPCR.enable_pins(); // pins managed by SPCRemulation in avr_emulation.h
+}
+
+void SPIClass::end() {
+	SPCR.disable_pins();
+	SPI0_MCR = SPI_MCR_MDIS | SPI_MCR_HALT | SPI_MCR_PCSIS(0x1F);
+}
+
+void SPIClass::usingInterrupt(uint8_t interruptNumber)
+{
+	// TODO: implement this...
+}
+
+void SPIClass::usingInterrupt(IRQ_NUMBER_t interruptName)
+{
+	// TODO: implement this...
+}
+
+
+
 const uint16_t SPISettings::ctar_div_table[23] = {
 	2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 32, 40,
 	56, 64, 96, 128, 192, 256, 384, 512, 640, 768
@@ -134,8 +163,57 @@ const uint32_t SPISettings::ctar_clock_table[23] = {
 	SPI_CTAR_PBR(2) | SPI_CTAR_BR(7) | SPI_CTAR_CSSCK(6),
 	SPI_CTAR_PBR(1) | SPI_CTAR_BR(8) | SPI_CTAR_CSSCK(7)
 };
+
+static void updateCTAR(uint32_t ctar)
+{
+	if (SPI0_CTAR0 != ctar) {
+		uint32_t mcr = SPI0_MCR;
+		if (mcr & SPI_MCR_MDIS) {
+			SPI0_CTAR0 = ctar;
+			SPI0_CTAR1 = ctar | SPI_CTAR_FMSZ(8);
+		} else {
+			SPI0_MCR = SPI_MCR_MDIS | SPI_MCR_HALT | SPI_MCR_PCSIS(0x1F);
+			SPI0_CTAR0 = ctar;
+			SPI0_CTAR1 = ctar | SPI_CTAR_FMSZ(8);
+			SPI0_MCR = mcr;
+		}
+	}
+}
+
+void SPIClass::setBitOrder(uint8_t bitOrder)
+{
+	SIM_SCGC6 |= SIM_SCGC6_SPI0;
+	uint32_t ctar = SPI0_CTAR0;
+	if (bitOrder == LSBFIRST) {
+		ctar |= SPI_CTAR_LSBFE;
+	} else {
+		ctar &= ~SPI_CTAR_LSBFE;
+	}
+	updateCTAR(ctar);
+}
+
+void SPIClass::setDataMode(uint8_t dataMode)
+{
+	SIM_SCGC6 |= SIM_SCGC6_SPI0;
+
+	// TODO: implement with native code
+
+	SPCR = (SPCR & ~SPI_MODE_MASK) | dataMode;
+}
+
+void SPIClass::setClockDivider_noInline(uint32_t clk)
+{
+	SIM_SCGC6 |= SIM_SCGC6_SPI0;
+	uint32_t ctar = SPI0_CTAR0;
+	ctar &= (SPI_CTAR_CPOL | SPI_CTAR_CPHA | SPI_CTAR_LSBFE);
+	if (ctar & SPI_CTAR_CPHA) {
+		clk = (clk & 0xFFFF0FFF) | ((clk & 0xF000) >> 4);
+	}
+	ctar |= clk;
+	updateCTAR(ctar);
+}
+
+
 #endif
-
-
 
 

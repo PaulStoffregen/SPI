@@ -213,6 +213,39 @@ void SPIClass::setClockDivider_noInline(uint32_t clk)
 	updateCTAR(ctar);
 }
 
+bool SPIClass::pinIsChipSelect(uint8_t pin)
+{
+	if (pin == 10 || pin == 9 || pin == 6 || pin == 2 || pin == 15) return true;
+	if (pin >= 20 && pin <= 23) return true;
+	return false;
+}
+
+bool SPIClass::pinIsChipSelect(uint8_t pin1, uint8_t pin2)
+{
+	if (!pinIsChipSelect(pin1) || !pinIsChipSelect(pin2)) return false;
+	if ((pin1 ==  2 && pin2 == 10) || (pin1 == 10 && pin2 ==  2)) return false;
+	if ((pin1 ==  6 && pin2 ==  9) || (pin1 ==  9 && pin2 ==  6)) return false;
+	if ((pin1 == 20 && pin2 == 23) || (pin1 == 23 && pin2 == 20)) return false;
+	if ((pin1 == 21 && pin2 == 22) || (pin1 == 22 && pin2 == 21)) return false;
+	return true;
+}
+
+uint8_t SPIClass::setCS(uint8_t pin)
+{
+	switch (pin) {
+	  case 10: CORE_PIN10_CONFIG = PORT_PCR_MUX(2); return 0x01; // PTC4
+	  case 2:  CORE_PIN2_CONFIG  = PORT_PCR_MUX(2); return 0x01; // PTD0
+	  case 9:  CORE_PIN9_CONFIG  = PORT_PCR_MUX(2); return 0x02; // PTC3
+	  case 6:  CORE_PIN6_CONFIG  = PORT_PCR_MUX(2); return 0x02; // PTD4
+	  case 20: CORE_PIN20_CONFIG = PORT_PCR_MUX(2); return 0x04; // PTD5
+	  case 23: CORE_PIN23_CONFIG = PORT_PCR_MUX(2); return 0x04; // PTC2
+	  case 21: CORE_PIN21_CONFIG = PORT_PCR_MUX(2); return 0x08; // PTD6
+	  case 22: CORE_PIN22_CONFIG = PORT_PCR_MUX(2); return 0x08; // PTC1
+	  case 15: CORE_PIN15_CONFIG = PORT_PCR_MUX(2); return 0x10; // PTC0
+	}
+	return 0;
+}
+
 
 #endif
 

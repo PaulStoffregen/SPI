@@ -19,6 +19,7 @@ uint8_t SPIClass::interruptSave = 0;
 
 void SPIClass::begin()
 {
+#if defined(__AVR__)
 	// Set SS to high so a connected chip will be "deselected" by default
 	digitalWrite(SS, HIGH);
 
@@ -39,14 +40,25 @@ void SPIClass::begin()
 	// clocking in a single bit since the lines go directly
 	// from "input" to SPI control.	 
 	// http://code.google.com/p/arduino/issues/detail?id=888
-#ifdef __AVR__
 	pinMode(SCK, OUTPUT);
 	pinMode(MOSI, OUTPUT);
+#elif defined(__arm__) && defined(TEENSYDUINO)
+	SIM_SCGC6 |= SIM_SCGC6_SPI0;
+	SPI0_MCR = SPI_MCR_MDIS | SPI_MCR_HALT | SPI_MCR_PCSIS(0x1F);
+	SPI0_CTAR0 = SPI_CTAR_FMSZ(7) | SPI_CTAR_PBR(0) | SPI_CTAR_BR(1) | SPI_CTAR_CSSCK(1);
+	SPI0_CTAR1 = SPI_CTAR_FMSZ(15) | SPI_CTAR_PBR(0) | SPI_CTAR_BR(1) | SPI_CTAR_CSSCK(1);
+	SPI0_MCR = SPI_MCR_MSTR | SPI_MCR_PCSIS(0x1F);
+	SPCR.enable_pins(); // pins managed by SPCRemulation in avr_emulation.h
 #endif
 }
 
 void SPIClass::end() {
+#if defined(__AVR__)
 	SPCR &= ~_BV(SPE);
+#elif defined(__arm__) && defined(TEENSYDUINO)
+	SPCR.disable_pins();
+	SPI0_MCR = SPI_MCR_MDIS | SPI_MCR_HALT | SPI_MCR_PCSIS(0x1F);
+#endif
 }
 
 void SPIClass::usingInterrupt(uint8_t interruptNumber)
@@ -90,4 +102,40 @@ void SPIClass::usingInterrupt(uint8_t interruptNumber)
 	interruptMask |= mask;
 	interrupts();
 }
+
+
+#if defined(__arm__) && defined(TEENSYDUINO)
+const uint16_t SPISettings::ctar_div_table[23] = {
+	2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 32, 40,
+	56, 64, 96, 128, 192, 256, 384, 512, 640, 768
+};
+const uint32_t SPISettings::ctar_clock_table[23] = {
+	SPI_CTAR_PBR(0) | SPI_CTAR_BR(0) | SPI_CTAR_DBR | SPI_CTAR_CSSCK(0),
+	SPI_CTAR_PBR(1) | SPI_CTAR_BR(0) | SPI_CTAR_DBR | SPI_CTAR_CSSCK(0),
+	SPI_CTAR_PBR(0) | SPI_CTAR_BR(0) | SPI_CTAR_CSSCK(0),
+	SPI_CTAR_PBR(2) | SPI_CTAR_BR(0) | SPI_CTAR_DBR | SPI_CTAR_CSSCK(0),
+	SPI_CTAR_PBR(1) | SPI_CTAR_BR(0) | SPI_CTAR_CSSCK(0),
+	SPI_CTAR_PBR(0) | SPI_CTAR_BR(1) | SPI_CTAR_CSSCK(1),
+	SPI_CTAR_PBR(2) | SPI_CTAR_BR(0) | SPI_CTAR_CSSCK(0),
+	SPI_CTAR_PBR(1) | SPI_CTAR_BR(1) | SPI_CTAR_CSSCK(1),
+	SPI_CTAR_PBR(0) | SPI_CTAR_BR(3) | SPI_CTAR_CSSCK(2),
+	SPI_CTAR_PBR(2) | SPI_CTAR_BR(1) | SPI_CTAR_CSSCK(0),
+	SPI_CTAR_PBR(1) | SPI_CTAR_BR(3) | SPI_CTAR_CSSCK(2),
+	SPI_CTAR_PBR(0) | SPI_CTAR_BR(4) | SPI_CTAR_CSSCK(3),
+	SPI_CTAR_PBR(2) | SPI_CTAR_BR(3) | SPI_CTAR_CSSCK(2),
+	SPI_CTAR_PBR(3) | SPI_CTAR_BR(3) | SPI_CTAR_CSSCK(2),
+	SPI_CTAR_PBR(0) | SPI_CTAR_BR(5) | SPI_CTAR_CSSCK(4),
+	SPI_CTAR_PBR(1) | SPI_CTAR_BR(5) | SPI_CTAR_CSSCK(4),
+	SPI_CTAR_PBR(0) | SPI_CTAR_BR(6) | SPI_CTAR_CSSCK(5),
+	SPI_CTAR_PBR(1) | SPI_CTAR_BR(6) | SPI_CTAR_CSSCK(5),
+	SPI_CTAR_PBR(0) | SPI_CTAR_BR(7) | SPI_CTAR_CSSCK(6),
+	SPI_CTAR_PBR(1) | SPI_CTAR_BR(7) | SPI_CTAR_CSSCK(6),
+	SPI_CTAR_PBR(0) | SPI_CTAR_BR(8) | SPI_CTAR_CSSCK(7),
+	SPI_CTAR_PBR(2) | SPI_CTAR_BR(7) | SPI_CTAR_CSSCK(6),
+	SPI_CTAR_PBR(1) | SPI_CTAR_BR(8) | SPI_CTAR_CSSCK(7)
+};
+#endif
+
+
+
 

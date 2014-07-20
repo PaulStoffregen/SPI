@@ -63,6 +63,7 @@ private:
 	void init_MightInline(uint32_t clock, uint8_t bitOrder, uint8_t dataMode) {
 		init_AlwaysInline(clock, bitOrder, dataMode);
 	}
+#if defined(__AVR__)
 	void init_AlwaysInline(uint32_t clock, uint8_t bitOrder, uint8_t dataMode)
 	  __attribute__((__always_inline__)) {
 		// Clock settings are defined as follows. Note that this shows SPI2X
@@ -127,6 +128,78 @@ private:
 	}
 	uint8_t spcr;
 	uint8_t spsr;
+#elif defined(__arm__) && defined(TEENSYDUINO)
+	void init_AlwaysInline(uint32_t clock, uint8_t bitOrder, uint8_t dataMode)
+	  __attribute__((__always_inline__)) {
+		uint32_t t, c = SPI_CTAR_FMSZ(7);
+		if (bitOrder == LSBFIRST) c |= SPI_CTAR_LSBFE;
+		if (__builtin_constant_p(clock)) {
+			if        (clock >= F_BUS / 2) {
+				t = SPI_CTAR_PBR(0) | SPI_CTAR_BR(0) | SPI_CTAR_DBR | SPI_CTAR_CSSCK(0);
+			} else if (clock >= F_BUS / 3) {
+				t = SPI_CTAR_PBR(1) | SPI_CTAR_BR(0) | SPI_CTAR_DBR | SPI_CTAR_CSSCK(0);
+			} else if (clock >= F_BUS / 4) {
+				t = SPI_CTAR_PBR(0) | SPI_CTAR_BR(0) | SPI_CTAR_CSSCK(0);
+			} else if (clock >= F_BUS / 5) {
+				t = SPI_CTAR_PBR(2) | SPI_CTAR_BR(0) | SPI_CTAR_DBR | SPI_CTAR_CSSCK(0);
+			} else if (clock >= F_BUS / 6) {
+				t = SPI_CTAR_PBR(1) | SPI_CTAR_BR(0) | SPI_CTAR_CSSCK(0);
+			} else if (clock >= F_BUS / 8) {
+				t = SPI_CTAR_PBR(0) | SPI_CTAR_BR(1) | SPI_CTAR_CSSCK(1);
+			} else if (clock >= F_BUS / 10) {
+				t = SPI_CTAR_PBR(2) | SPI_CTAR_BR(0) | SPI_CTAR_CSSCK(0);
+			} else if (clock >= F_BUS / 12) {
+				t = SPI_CTAR_PBR(1) | SPI_CTAR_BR(1) | SPI_CTAR_CSSCK(1);
+			} else if (clock >= F_BUS / 16) {
+				t = SPI_CTAR_PBR(0) | SPI_CTAR_BR(3) | SPI_CTAR_CSSCK(2);
+			} else if (clock >= F_BUS / 20) {
+				t = SPI_CTAR_PBR(2) | SPI_CTAR_BR(1) | SPI_CTAR_CSSCK(0);
+			} else if (clock >= F_BUS / 24) {
+				t = SPI_CTAR_PBR(1) | SPI_CTAR_BR(3) | SPI_CTAR_CSSCK(2);
+			} else if (clock >= F_BUS / 32) {
+				t = SPI_CTAR_PBR(0) | SPI_CTAR_BR(4) | SPI_CTAR_CSSCK(3);
+			} else if (clock >= F_BUS / 40) {
+				t = SPI_CTAR_PBR(2) | SPI_CTAR_BR(3) | SPI_CTAR_CSSCK(2);
+			} else if (clock >= F_BUS / 56) {
+				t = SPI_CTAR_PBR(3) | SPI_CTAR_BR(3) | SPI_CTAR_CSSCK(2);
+			} else if (clock >= F_BUS / 64) {
+				t = SPI_CTAR_PBR(0) | SPI_CTAR_BR(5) | SPI_CTAR_CSSCK(4);
+			} else if (clock >= F_BUS / 96) {
+				t = SPI_CTAR_PBR(1) | SPI_CTAR_BR(5) | SPI_CTAR_CSSCK(4);
+			} else if (clock >= F_BUS / 128) {
+				t = SPI_CTAR_PBR(0) | SPI_CTAR_BR(6) | SPI_CTAR_CSSCK(5);
+			} else if (clock >= F_BUS / 192) {
+				t = SPI_CTAR_PBR(1) | SPI_CTAR_BR(6) | SPI_CTAR_CSSCK(5);
+			} else if (clock >= F_BUS / 256) {
+				t = SPI_CTAR_PBR(0) | SPI_CTAR_BR(7) | SPI_CTAR_CSSCK(6);
+			} else if (clock >= F_BUS / 384) {
+				t = SPI_CTAR_PBR(1) | SPI_CTAR_BR(7) | SPI_CTAR_CSSCK(6);
+			} else if (clock >= F_BUS / 512) {
+				t = SPI_CTAR_PBR(0) | SPI_CTAR_BR(8) | SPI_CTAR_CSSCK(7);
+			} else if (clock >= F_BUS / 640) {
+				t = SPI_CTAR_PBR(2) | SPI_CTAR_BR(7) | SPI_CTAR_CSSCK(6);
+			} else {         /* F_BUS / 768 */
+				t = SPI_CTAR_PBR(1) | SPI_CTAR_BR(8) | SPI_CTAR_CSSCK(7);
+			}
+		} else {
+			for (uint32_t i=0; i<23; i++) {
+				t = ctar_clock_table[i];
+				if (clock >= F_BUS / ctar_div_table[i]) break;
+			}
+		}
+		if (dataMode & 0x08) {
+			c |= SPI_CTAR_CPOL;
+		}
+		if (dataMode & 0x04) {
+			c |= SPI_CTAR_CPHA;
+			t = (t & 0xFFFF0FFF) | ((t & 0xF000) >> 4);
+		}
+		ctar = c | t;
+	}
+	static const uint16_t ctar_div_table[23];
+	static const uint32_t ctar_clock_table[23];
+	uint32_t ctar;
+#endif
 	friend class SPIClass;
 };
 
@@ -143,7 +216,7 @@ public:
 	// with attachInterrupt.  If SPI is used from a different interrupt
 	// (eg, a timer), interruptNumber should be 255.
 	static void usingInterrupt(uint8_t interruptNumber);
-	#if defined(__arm__) && defined(CORE_TEENSY)
+	#if defined(__arm__) && defined(TEENSYDUINO)
 	static void usingInterrupt(IRQ_NUMBER_t interruptName);
 	#endif
 
@@ -163,12 +236,21 @@ public:
 				cli();
 			}
 		}
+		#if defined(__AVR__)
 		SPCR = settings.spcr;
 		SPSR = settings.spsr;
+		#elif defined(__arm__) && defined(TEENSYDUINO)
+		if (SPI0_CTAR0 != settings.ctar) {
+			SPI0_MCR = SPI_MCR_MDIS | SPI_MCR_HALT | SPI_MCR_PCSIS(0x1F);
+			SPI0_CTAR0 = settings.ctar;
+			SPI0_CTAR1 = settings.ctar | SPI_CTAR_FMSZ(7);
+			SPI0_MCR = SPI_MCR_MSTR | SPI_MCR_PCSIS(0x1F);
+		}
+		#endif
 	}
 
 	// Write to the SPI bus (MOSI pin) and also receive (MISO pin)
-	inline static byte transfer(byte data) {
+	inline static uint8_t transfer(uint8_t data) {
 		SPDR = data;
 		asm volatile("nop");
 		while (!(SPSR & _BV(SPIF))) ; // wait
@@ -230,7 +312,7 @@ public:
 	inline static void attachInterrupt() { SPCR |= _BV(SPIE); }
 	inline static void detachInterrupt() { SPCR &= ~_BV(SPIE); }
 
-#if defined(__arm__) && defined(CORE_TEENSY)
+#if defined(__arm__) && defined(TEENSYDUINO)
 	inline void setMOSI(uint8_t pin) __attribute__((always_inline)) { SPCR.setMOSI(pin); }
 	inline void setMISO(uint8_t pin) __attribute__((always_inline)) { SPCR.setMISO(pin); }
 	inline void setSCK(uint8_t pin) __attribute__((always_inline)) { SPCR.setSCK(pin); }

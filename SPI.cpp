@@ -369,7 +369,7 @@ void SPIClass::usingInterrupt(uint8_t interruptNumber)
 	if (irestore) interrupts();
 }
 
-void SPIClass::beginTransaction(uint8_t clockDiv, BitOrder bitOrder, uint8_t dataMode)
+void SPIClass::beginTransaction(uint8_t pin, SPISettings settings)
 {
 	if (interruptMode > 0) {
 		if (interruptMode == 1) {
@@ -383,9 +383,9 @@ void SPIClass::beginTransaction(uint8_t clockDiv, BitOrder bitOrder, uint8_t dat
 			noInterrupts();
 		}
 	}
-	setClockDivider(BOARD_SPI_DEFAULT_SS, clockDiv);
-	setDataMode(BOARD_SPI_DEFAULT_SS, dataMode);
-	setBitOrder(BOARD_SPI_DEFAULT_SS, bitOrder);
+	uint32_t ch = BOARD_PIN_TO_SPI_CHANNEL(pin);
+	bitOrder[ch] = settings.border;
+	SPI_ConfigureNPCS(spi, ch, settings.config);
 }
 
 void SPIClass::endTransaction(void)

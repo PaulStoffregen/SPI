@@ -379,24 +379,49 @@ public:
 	// prevent conflicts.  The input interruptNumber is the number used
 	// with attachInterrupt.  If SPI is used from a different interrupt
 	// (eg, a timer), interruptNumber should be 255.
-	static void usingInterrupt(uint8_t interruptNumber);
+	static void usingInterrupt(uint8_t n) {
+		if (n == 3 || n == 4 || n == 24 || n == 33) {
+			usingInterrupt(IRQ_PORTA);
+		} else if (n == 0 || n == 1 || (n >= 16 && n <= 19) || n == 25 || n == 32) {
+			usingInterrupt(IRQ_PORTB);
+		} else if ((n >= 9 && n <= 13) || n == 15 || n == 22 || n == 23
+		  || (n >= 27 && n <= 30)) {
+			usingInterrupt(IRQ_PORTC);
+		} else if (n == 2 || (n >= 5 && n <= 8) || n == 14 || n == 20 || n == 21) {
+			usingInterrupt(IRQ_PORTD);
+		} else if (n == 26 || n == 31) {
+			usingInterrupt(IRQ_PORTE);
+		}
+	}
 	static void usingInterrupt(IRQ_NUMBER_t interruptName);
 
 	// Before using SPI.transfer() or asserting chip select pins,
 	// this function is used to gain exclusive access to the SPI bus
 	// and configure the correct settings.
 	inline static void beginTransaction(SPISettings settings) {
-		if (interruptMode > 0) {
-			#ifdef SPI_AVR_EIMSK
-			if (interruptMode == 1) {
-				interruptSave = SPI_AVR_EIMSK;
-				SPI_AVR_EIMSK &= ~interruptMask;
-			} else
-			#endif
-			{
-				interruptSave = SREG;
-				cli();
+		if (interruptMasksUsed) {
+			if (interruptMasksUsed & 0x01) {
+				interruptSave[0] = NVIC_ICER0 & interruptMask[0];
+				NVIC_ICER0 = interruptMask[0];
 			}
+			#if NVIC_NUM_INTERRUPTS > 32
+			if (interruptMasksUsed & 0x02) {
+				interruptSave[1] = NVIC_ICER1 & interruptMask[1];
+				NVIC_ICER1 = interruptMask[1];
+			}
+			#endif
+			#if NVIC_NUM_INTERRUPTS > 64 && defined(NVIC_ISER2)
+			if (interruptMasksUsed & 0x04) {
+				interruptSave[2] = NVIC_ICER2 & interruptMask[2];
+				NVIC_ICER2 = interruptMask[2];
+			}
+			#endif
+			#if NVIC_NUM_INTERRUPTS > 96 && defined(NVIC_ISER3)
+			if (interruptMasksUsed & 0x08) {
+				interruptSave[3] = NVIC_ICER3 & interruptMask[3];
+				NVIC_ICER3 = interruptMask[3];
+			}
+			#endif
 		}
 		if (SPI0_CTAR0 != settings.ctar) {
 			SPI0_MCR = SPI_MCR_MDIS | SPI_MCR_HALT | SPI_MCR_PCSIS(0x1F);
@@ -437,15 +462,25 @@ public:
 	// After performing a group of transfers and releasing the chip select
 	// signal, this function allows others to access the SPI bus
 	inline static void endTransaction(void) {
-		if (interruptMode > 0) {
-			#ifdef SPI_AVR_EIMSK
-			if (interruptMode == 1) {
-				SPI_AVR_EIMSK = interruptSave;
-			} else
-			#endif
-			{
-				SREG = interruptSave;
+		if (interruptMasksUsed) {
+			if (interruptMasksUsed & 0x01) {
+				NVIC_ISER0 = interruptSave[0];
 			}
+			#if NVIC_NUM_INTERRUPTS > 32
+			if (interruptMasksUsed & 0x02) {
+				NVIC_ISER1 = interruptSave[1];
+			}
+			#endif
+			#if NVIC_NUM_INTERRUPTS > 64 && defined(NVIC_ISER2)
+			if (interruptMasksUsed & 0x04) {
+				NVIC_ISER2 = interruptSave[2];
+			}
+			#endif
+			#if NVIC_NUM_INTERRUPTS > 96 && defined(NVIC_ISER3)
+			if (interruptMasksUsed & 0x08) {
+				NVIC_ISER3 = interruptSave[3];
+			}
+			#endif
 		}
 	}
 
@@ -505,9 +540,9 @@ public:
 	static uint8_t setCS(uint8_t pin);
 
 private:
-	static uint8_t interruptMode; // 0=none, 1=mask, 2=global
-	static uint8_t interruptMask; // which interrupts to mask
-	static uint8_t interruptSave; // temp storage, to restore state
+	static uint8_t interruptMasksUsed;
+	static uint32_t interruptMask[(NVIC_NUM_INTERRUPTS+31)/32];
+	static uint32_t interruptSave[(NVIC_NUM_INTERRUPTS+31)/32];
 };
 
 
@@ -887,9 +922,9 @@ class SPIClass {
 	uint32_t mode[SPI_CHANNELS_NUM];
 	void (*initCb)(void);
 	bool initialized;
-	static uint8_t interruptMode;  // 0=none, 1=mask, 2=global
-	static uint8_t interruptMask;  // bits 0:3=pin change
-	static uint8_t interruptSave;  // temp storage, to restore state
+	uint8_t interruptMode;  // 0=none, 1=mask, 2=global
+	uint8_t interruptMask;  // bits 0:3=pin change
+	uint8_t interruptSave;  // temp storage, to restore state
 };
 
 

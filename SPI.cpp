@@ -143,9 +143,9 @@ void SPIClass::usingInterrupt(uint8_t interruptNumber)
 
 SPIClass SPI;
 
-uint8_t SPIClass::interruptMode = 0;
-uint8_t SPIClass::interruptMask = 0;
-uint8_t SPIClass::interruptSave = 0;
+uint8_t SPIClass::interruptMasksUsed = 0;
+uint32_t SPIClass::interruptMask[(NVIC_NUM_INTERRUPTS+31)/32];
+uint32_t SPIClass::interruptSave[(NVIC_NUM_INTERRUPTS+31)/32];
 
 void SPIClass::begin()
 {
@@ -162,17 +162,14 @@ void SPIClass::end() {
 	SPI0_MCR = SPI_MCR_MDIS | SPI_MCR_HALT | SPI_MCR_PCSIS(0x1F);
 }
 
-void SPIClass::usingInterrupt(uint8_t interruptNumber)
-{
-	// TODO: implement this...
-}
-
 void SPIClass::usingInterrupt(IRQ_NUMBER_t interruptName)
 {
-	// TODO: implement this...
+	uint32_t n = (uint32_t)interruptName;
+
+	if (n >= NVIC_NUM_INTERRUPTS) return;
+	interruptMasksUsed |= (1 << (n >> 5));
+	interruptMask[n >> 5] |= (1 << (n & 0x1F));
 }
-
-
 
 const uint16_t SPISettings::ctar_div_table[23] = {
 	2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 32, 40,
@@ -295,9 +292,6 @@ uint8_t SPIClass::setCS(uint8_t pin)
 
 #include "SPI.h"
 
-uint8_t SPIClass::interruptMode = 0;
-uint8_t SPIClass::interruptMask = 0;
-uint8_t SPIClass::interruptSave = 0;
 
 SPIClass::SPIClass(Spi *_spi, uint32_t _id, void(*_initCb)(void)) :
 	spi(_spi), id(_id), initCb(_initCb), initialized(false)
@@ -307,7 +301,6 @@ SPIClass::SPIClass(Spi *_spi, uint32_t _id, void(*_initCb)(void)) :
 
 void SPIClass::begin() {
 	init();
-
 	// NPCS control is left to the user
 
 	// Default speed set to 4Mhz
@@ -335,6 +328,9 @@ void SPIClass::begin(uint8_t _pin) {
 void SPIClass::init() {
 	if (initialized)
 		return;
+	interruptMode = 0;
+	interruptMask = 0;
+	interruptSave = 0;
 	initCb();
 	SPI_Configure(spi, id, SPI_MR_MSTR | SPI_MR_PS | SPI_MR_MODFDIS);
 	SPI_Enable(spi);

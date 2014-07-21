@@ -45,7 +45,7 @@
 
 
 /**********************************************************/
-/*     8 bit AVR-based boards                             */
+/*     8 bit AVR-based boards				  */
 /**********************************************************/
 
 #if defined(__AVR__)
@@ -81,14 +81,14 @@ private:
 		// inverted, so the bits form increasing numbers. Also note that
 		// fosc/64 appears twice
 		// SPR1 SPR0 ~SPI2X Freq
-		//   0    0     0   fosc/2
-		//   0    0     1   fosc/4
-		//   0    1     0   fosc/8
-		//   0    1     1   fosc/16
-		//   1    0     0   fosc/32
-		//   1    0     1   fosc/64
-		//   1    1     0   fosc/64
-		//   1    1     1   fosc/128
+		//   0	  0	0   fosc/2
+		//   0	  0	1   fosc/4
+		//   0	  1	0   fosc/8
+		//   0	  1	1   fosc/16
+		//   1	  0	0   fosc/32
+		//   1	  0	1   fosc/64
+		//   1	  1	0   fosc/64
+		//   1	  1	1   fosc/128
 
 		// We find the fastest clock that is less than or equal to the
 		// given clock rate. The clock divider that results in clock_setting
@@ -268,7 +268,7 @@ private:
 
 
 /**********************************************************/
-/*     32 bit Teensy 3.0 and 3.1                          */
+/*     32 bit Teensy 3.0 and 3.1			  */
 /**********************************************************/
 
 #elif defined(__arm__) && defined(TEENSYDUINO)
@@ -294,7 +294,7 @@ private:
 		uint32_t t, c = SPI_CTAR_FMSZ(7);
 		if (bitOrder == LSBFIRST) c |= SPI_CTAR_LSBFE;
 		if (__builtin_constant_p(clock)) {
-			if        (clock >= F_BUS / 2) {
+			if	  (clock >= F_BUS / 2) {
 				t = SPI_CTAR_PBR(0) | SPI_CTAR_BR(0) | SPI_CTAR_DBR
 				  | SPI_CTAR_CSSCK(0);
 			} else if (clock >= F_BUS / 3) {
@@ -341,7 +341,7 @@ private:
 				t = SPI_CTAR_PBR(0) | SPI_CTAR_BR(8) | SPI_CTAR_CSSCK(7);
 			} else if (clock >= F_BUS / 640) {
 				t = SPI_CTAR_PBR(2) | SPI_CTAR_BR(7) | SPI_CTAR_CSSCK(6);
-			} else {         /* F_BUS / 768 */
+			} else {	 /* F_BUS / 768 */
 				t = SPI_CTAR_PBR(1) | SPI_CTAR_BR(8) | SPI_CTAR_CSSCK(7);
 			}
 		} else {
@@ -507,6 +507,95 @@ private:
 	static uint8_t interruptMask; // which interrupts to mask
 	static uint8_t interruptSave; // temp storage, to restore state
 };
+
+
+/**********************************************************/
+/*     32 bit Arduino Due				  */
+/**********************************************************/
+
+#elif defined(__arm__) && defined(__SAM3X8E__)
+
+#undef SPI_MODE0
+#undef SPI_MODE1
+#undef SPI_MODE2
+#undef SPI_MODE3
+#define SPI_MODE0 0x02
+#define SPI_MODE1 0x00
+#define SPI_MODE2 0x03
+#define SPI_MODE3 0x01
+
+#undef SPI_CLOCK_DIV2
+#undef SPI_CLOCK_DIV4
+#undef SPI_CLOCK_DIV8
+#undef SPI_CLOCK_DIV16
+#undef SPI_CLOCK_DIV32
+#undef SPI_CLOCK_DIV64
+#undef SPI_CLOCK_DIV128
+#define SPI_CLOCK_DIV2	 11
+#define SPI_CLOCK_DIV4	 21
+#define SPI_CLOCK_DIV8	 42
+#define SPI_CLOCK_DIV16	 84
+#define SPI_CLOCK_DIV32	 168
+#define SPI_CLOCK_DIV64	 255
+#define SPI_CLOCK_DIV128 255
+
+enum SPITransferMode {
+	SPI_CONTINUE,
+	SPI_LAST
+};
+
+class SPIClass {
+  public:
+	SPIClass(Spi *_spi, uint32_t _id, void(*_initCb)(void));
+
+	byte transfer(uint8_t _data, SPITransferMode _mode = SPI_LAST) { return transfer(BOARD_SPI_DEFAULT_SS, _data, _mode); }
+	byte transfer(byte _channel, uint8_t _data, SPITransferMode _mode = SPI_LAST);
+
+	// Transaction Functions
+	void usingInterrupt(uint8_t interruptNumber);
+	void beginTransaction(uint8_t clockDiv, BitOrder bitOrder, uint8_t dataMode);
+	void endTransaction(void);
+
+	// SPI Configuration methods
+	void attachInterrupt(void);
+	void detachInterrupt(void);
+
+	void begin(void);
+	void end(void);
+
+	// Attach/Detach pin to/from SPI controller
+	void begin(uint8_t _pin);
+	void end(uint8_t _pin);
+
+	// These methods sets a parameter on a single pin
+	void setBitOrder(uint8_t _pin, BitOrder);
+	void setDataMode(uint8_t _pin, uint8_t);
+	void setClockDivider(uint8_t _pin, uint8_t);
+
+	// These methods sets the same parameters but on default pin BOARD_SPI_DEFAULT_SS
+	void setBitOrder(BitOrder _order) { setBitOrder(BOARD_SPI_DEFAULT_SS, _order); };
+	void setDataMode(uint8_t _mode) { setDataMode(BOARD_SPI_DEFAULT_SS, _mode); };
+	void setClockDivider(uint8_t _div) { setClockDivider(BOARD_SPI_DEFAULT_SS, _div); };
+
+  private:
+	void init();
+
+	Spi *spi;
+	uint32_t id;
+	BitOrder bitOrder[SPI_CHANNELS_NUM];
+	uint32_t divider[SPI_CHANNELS_NUM];
+	uint32_t mode[SPI_CHANNELS_NUM];
+	void (*initCb)(void);
+	bool initialized;
+	static uint8_t interruptMode;  // 0=none, 1=mask, 2=global
+	static uint8_t interruptMask;  // bits 0:3=pin change
+	static uint8_t interruptSave;  // temp storage, to restore state
+};
+
+
+
+
+
 
 #endif
 

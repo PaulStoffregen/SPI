@@ -11,14 +11,15 @@
 #include "SPI.h"
 #include "pins_arduino.h"
 
-SPIClass SPI;
 
 
 /**********************************************************/
-/*     8 bit AVR-based boards                             */
+/*     8 bit AVR-based boards				  */
 /**********************************************************/
 
 #if defined(__AVR__)
+
+SPIClass SPI;
 
 uint8_t SPIClass::interruptMode = 0;
 uint8_t SPIClass::interruptMask = 0;
@@ -56,38 +57,38 @@ void SPIClass::end() {
 
 // mapping of interrupt numbers to bits within SPI_AVR_EIMSK
 #if defined(__AVR_ATmega32U4__)
-  #define SPI_INT0_MASK  (1<<INT0)
-  #define SPI_INT1_MASK  (1<<INT1)
-  #define SPI_INT2_MASK  (1<<INT2)
-  #define SPI_INT3_MASK  (1<<INT3)
-  #define SPI_INT4_MASK  (1<<INT6)
+  #define SPI_INT0_MASK	 (1<<INT0)
+  #define SPI_INT1_MASK	 (1<<INT1)
+  #define SPI_INT2_MASK	 (1<<INT2)
+  #define SPI_INT3_MASK	 (1<<INT3)
+  #define SPI_INT4_MASK	 (1<<INT6)
 #elif defined(__AVR_AT90USB646__) || defined(__AVR_AT90USB1286__)
-  #define SPI_INT0_MASK  (1<<INT0)
-  #define SPI_INT1_MASK  (1<<INT1)
-  #define SPI_INT2_MASK  (1<<INT2)
-  #define SPI_INT3_MASK  (1<<INT3)
-  #define SPI_INT4_MASK  (1<<INT4)
-  #define SPI_INT5_MASK  (1<<INT5)
-  #define SPI_INT6_MASK  (1<<INT6)
-  #define SPI_INT7_MASK  (1<<INT7)
+  #define SPI_INT0_MASK	 (1<<INT0)
+  #define SPI_INT1_MASK	 (1<<INT1)
+  #define SPI_INT2_MASK	 (1<<INT2)
+  #define SPI_INT3_MASK	 (1<<INT3)
+  #define SPI_INT4_MASK	 (1<<INT4)
+  #define SPI_INT5_MASK	 (1<<INT5)
+  #define SPI_INT6_MASK	 (1<<INT6)
+  #define SPI_INT7_MASK	 (1<<INT7)
 #elif defined(EICRA) && defined(EICRB) && defined(EIMSK)
-  #define SPI_INT0_MASK  (1<<INT4)
-  #define SPI_INT1_MASK  (1<<INT5)
-  #define SPI_INT2_MASK  (1<<INT0)
-  #define SPI_INT3_MASK  (1<<INT1)
-  #define SPI_INT4_MASK  (1<<INT2)
-  #define SPI_INT5_MASK  (1<<INT3)
-  #define SPI_INT6_MASK  (1<<INT6)
-  #define SPI_INT7_MASK  (1<<INT7)
+  #define SPI_INT0_MASK	 (1<<INT4)
+  #define SPI_INT1_MASK	 (1<<INT5)
+  #define SPI_INT2_MASK	 (1<<INT0)
+  #define SPI_INT3_MASK	 (1<<INT1)
+  #define SPI_INT4_MASK	 (1<<INT2)
+  #define SPI_INT5_MASK	 (1<<INT3)
+  #define SPI_INT6_MASK	 (1<<INT6)
+  #define SPI_INT7_MASK	 (1<<INT7)
 #else
   #ifdef INT0
-  #define SPI_INT0_MASK  (1<<INT0)
+  #define SPI_INT0_MASK	 (1<<INT0)
   #endif
   #ifdef INT1
-  #define SPI_INT1_MASK  (1<<INT1)
+  #define SPI_INT1_MASK	 (1<<INT1)
   #endif
   #ifdef INT2
-  #define SPI_INT2_MASK  (1<<INT2)
+  #define SPI_INT2_MASK	 (1<<INT2)
   #endif
 #endif
 
@@ -135,10 +136,12 @@ void SPIClass::usingInterrupt(uint8_t interruptNumber)
 
 
 /**********************************************************/
-/*     32 bit Teensy 3.0 and 3.1                          */
+/*     32 bit Teensy 3.0 and 3.1			  */
 /**********************************************************/
 
 #elif defined(__arm__) && defined(TEENSYDUINO)
+
+SPIClass SPI;
 
 uint8_t SPIClass::interruptMode = 0;
 uint8_t SPIClass::interruptMask = 0;
@@ -282,6 +285,212 @@ uint8_t SPIClass::setCS(uint8_t pin)
 	}
 	return 0;
 }
+
+
+/**********************************************************/
+/*     32 bit Arduino Due				  */
+/**********************************************************/
+
+#elif defined(__arm__) && defined(__SAM3X8E__)
+
+#include "SPI.h"
+
+uint8_t SPIClass::interruptMode = 0;
+uint8_t SPIClass::interruptMask = 0;
+uint8_t SPIClass::interruptSave = 0;
+
+SPIClass::SPIClass(Spi *_spi, uint32_t _id, void(*_initCb)(void)) :
+	spi(_spi), id(_id), initCb(_initCb), initialized(false)
+{
+	// Empty
+}
+
+void SPIClass::begin() {
+	init();
+
+	// NPCS control is left to the user
+
+	// Default speed set to 4Mhz
+	setClockDivider(BOARD_SPI_DEFAULT_SS, 21);
+	setDataMode(BOARD_SPI_DEFAULT_SS, SPI_MODE0);
+	setBitOrder(BOARD_SPI_DEFAULT_SS, MSBFIRST);
+}
+
+void SPIClass::begin(uint8_t _pin) {
+	init();
+
+	uint32_t spiPin = BOARD_PIN_TO_SPI_PIN(_pin);
+	PIO_Configure(
+		g_APinDescription[spiPin].pPort,
+		g_APinDescription[spiPin].ulPinType,
+		g_APinDescription[spiPin].ulPin,
+		g_APinDescription[spiPin].ulPinConfiguration);
+
+	// Default speed set to 4Mhz
+	setClockDivider(_pin, 21);
+	setDataMode(_pin, SPI_MODE0);
+	setBitOrder(_pin, MSBFIRST);
+}
+
+void SPIClass::init() {
+	if (initialized)
+		return;
+	initCb();
+	SPI_Configure(spi, id, SPI_MR_MSTR | SPI_MR_PS | SPI_MR_MODFDIS);
+	SPI_Enable(spi);
+	initialized = true;
+}
+
+void SPIClass::usingInterrupt(uint8_t interruptNumber)
+{
+	uint8_t irestore;
+
+	irestore = interruptsStatus();
+	noInterrupts();
+	if (interruptMode < 2) {
+		if (interruptNumber > NUM_DIGITAL_PINS) {
+			interruptMode = 2;
+		} else {
+			uint8_t imask = interruptMask;
+			Pio *pio = g_APinDescription[interruptNumber].pPort;
+			if (pio == PIOA) {
+				imask |= 1;
+			} else if (pio == PIOB) {
+				imask |= 2;
+			} else if (pio == PIOC) {
+				imask |= 4;
+			} else if (pio == PIOD) {
+				imask |= 8;
+			}
+			interruptMask = imask;
+			interruptMode = 1;
+		}
+	}
+	if (irestore) interrupts();
+}
+
+void SPIClass::beginTransaction(uint8_t clockDiv, BitOrder bitOrder, uint8_t dataMode)
+{
+	if (interruptMode > 0) {
+		if (interruptMode == 1) {
+			uint8_t imask = interruptMask;
+			if (imask & 1) NVIC_DisableIRQ(PIOA_IRQn);
+			if (imask & 2) NVIC_DisableIRQ(PIOB_IRQn);
+			if (imask & 4) NVIC_DisableIRQ(PIOC_IRQn);
+			if (imask & 8) NVIC_DisableIRQ(PIOD_IRQn);
+		} else {
+			interruptSave = interruptsStatus();
+			noInterrupts();
+		}
+	}
+	setClockDivider(BOARD_SPI_DEFAULT_SS, clockDiv);
+	setDataMode(BOARD_SPI_DEFAULT_SS, dataMode);
+	setBitOrder(BOARD_SPI_DEFAULT_SS, bitOrder);
+}
+
+void SPIClass::endTransaction(void)
+{
+	if (interruptMode > 0) {
+		if (interruptMode == 1) {
+			uint8_t imask = interruptMask;
+			if (imask & 1) NVIC_EnableIRQ(PIOA_IRQn);
+			if (imask & 2) NVIC_EnableIRQ(PIOB_IRQn);
+			if (imask & 4) NVIC_EnableIRQ(PIOC_IRQn);
+			if (imask & 8) NVIC_EnableIRQ(PIOD_IRQn);
+		} else {
+			if (interruptSave) interrupts();
+		}
+	}
+}
+
+void SPIClass::end(uint8_t _pin) {
+	uint32_t spiPin = BOARD_PIN_TO_SPI_PIN(_pin);
+	// Setting the pin as INPUT will disconnect it from SPI peripheral
+	pinMode(spiPin, INPUT);
+}
+
+void SPIClass::end() {
+	SPI_Disable(spi);
+	initialized = false;
+}
+
+void SPIClass::setBitOrder(uint8_t _pin, BitOrder _bitOrder) {
+	uint32_t ch = BOARD_PIN_TO_SPI_CHANNEL(_pin);
+	bitOrder[ch] = _bitOrder;
+}
+
+void SPIClass::setDataMode(uint8_t _pin, uint8_t _mode) {
+	uint32_t ch = BOARD_PIN_TO_SPI_CHANNEL(_pin);
+	mode[ch] = _mode | SPI_CSR_CSAAT;
+	// SPI_CSR_DLYBCT(1) keeps CS enabled for 32 MCLK after a completed
+	// transfer. Some device needs that for working properly.
+	SPI_ConfigureNPCS(spi, ch, mode[ch] | SPI_CSR_SCBR(divider[ch]) | SPI_CSR_DLYBCT(1));
+}
+
+void SPIClass::setClockDivider(uint8_t _pin, uint8_t _divider) {
+	uint32_t ch = BOARD_PIN_TO_SPI_CHANNEL(_pin);
+	divider[ch] = _divider;
+	// SPI_CSR_DLYBCT(1) keeps CS enabled for 32 MCLK after a completed
+	// transfer. Some device needs that for working properly.
+	SPI_ConfigureNPCS(spi, ch, mode[ch] | SPI_CSR_SCBR(divider[ch]) | SPI_CSR_DLYBCT(1));
+}
+
+byte SPIClass::transfer(byte _pin, uint8_t _data, SPITransferMode _mode) {
+	uint32_t ch = BOARD_PIN_TO_SPI_CHANNEL(_pin);
+	// Reverse bit order
+	if (bitOrder[ch] == LSBFIRST)
+		_data = __REV(__RBIT(_data));
+	uint32_t d = _data | SPI_PCS(ch);
+	if (_mode == SPI_LAST)
+		d |= SPI_TDR_LASTXFER;
+
+	// SPI_Write(spi, _channel, _data);
+    while ((spi->SPI_SR & SPI_SR_TDRE) == 0)
+	;
+    spi->SPI_TDR = d;
+
+    // return SPI_Read(spi);
+    while ((spi->SPI_SR & SPI_SR_RDRF) == 0)
+	;
+    d = spi->SPI_RDR;
+	// Reverse bit order
+	if (bitOrder[ch] == LSBFIRST)
+		d = __REV(__RBIT(d));
+    return d & 0xFF;
+}
+
+void SPIClass::attachInterrupt(void) {
+	// Should be enableInterrupt()
+}
+
+void SPIClass::detachInterrupt(void) {
+	// Should be disableInterrupt()
+}
+
+#if SPI_INTERFACES_COUNT > 0
+static void SPI_0_Init(void) {
+	PIO_Configure(
+			g_APinDescription[PIN_SPI_MOSI].pPort,
+			g_APinDescription[PIN_SPI_MOSI].ulPinType,
+			g_APinDescription[PIN_SPI_MOSI].ulPin,
+			g_APinDescription[PIN_SPI_MOSI].ulPinConfiguration);
+	PIO_Configure(
+			g_APinDescription[PIN_SPI_MISO].pPort,
+			g_APinDescription[PIN_SPI_MISO].ulPinType,
+			g_APinDescription[PIN_SPI_MISO].ulPin,
+			g_APinDescription[PIN_SPI_MISO].ulPinConfiguration);
+	PIO_Configure(
+			g_APinDescription[PIN_SPI_SCK].pPort,
+			g_APinDescription[PIN_SPI_SCK].ulPinType,
+			g_APinDescription[PIN_SPI_SCK].ulPin,
+			g_APinDescription[PIN_SPI_SCK].ulPinConfiguration);
+}
+
+SPIClass SPI(SPI_INTERFACE, SPI_INTERFACE_ID, SPI_0_Init);
+#endif
+
+
+
 
 
 #endif

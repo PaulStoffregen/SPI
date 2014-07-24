@@ -337,6 +337,17 @@ void SPIClass::init() {
 	initialized = true;
 }
 
+#ifndef interruptsStatus
+#define interruptsStatus() __interruptsStatus()
+static inline unsigned char __interruptsStatus(void) __attribute__((always_inline, unused));
+static inline unsigned char __interruptsStatus(void) {
+  unsigned int primask;
+  asm volatile ("mrs %0, primask" : "=r" (primask));
+  if (primask) return 0;
+  return 1;
+}
+#endif
+
 void SPIClass::usingInterrupt(uint8_t interruptNumber)
 {
 	uint8_t irestore;

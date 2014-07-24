@@ -863,7 +863,7 @@ private:
 			}
 			*/
 		} else {
-			for (div=2; i<255; i++) {
+			for (div=2; div<255; div++) {
 				if (clock >= F_CPU / div) break;
 			}
 		}

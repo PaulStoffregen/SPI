@@ -19,6 +19,12 @@
 // usingInterrupt(), and SPISetting(clock, bitOrder, dataMode)
 #define SPI_HAS_TRANSACTION 1
 
+// Uncomment this line to add detection of mismatched begin/end transactions.
+// A mismatch occurs if other libraries fail to use SPI.endTransaction() for
+// each SPI.beginTransaction().  Connect a LED to this pin.  The LED will turn
+// on if any mismatch is ever detected.
+//#define SPI_TRANSACTION_MISMATCH_LED 5
+
 #ifndef __SAM3X8E__
 #ifndef LSBFIRST
 #define LSBFIRST 0
@@ -174,6 +180,13 @@ public:
 				cli();
 			}
 		}
+		#ifdef SPI_TRANSACTION_MISMATCH_LED
+		if (inTransactionFlag) {
+			pinMode(SPI_TRANSACTION_MISMATCH_LED, OUTPUT);
+			digitalWrite(SPI_TRANSACTION_MISMATCH_LED, HIGH);
+		}
+		inTransactionFlag = 1;
+		#endif
 		SPCR = settings.spcr;
 		SPSR = settings.spsr;
 	}
@@ -223,6 +236,13 @@ public:
 	// After performing a group of transfers and releasing the chip select
 	// signal, this function allows others to access the SPI bus
 	inline static void endTransaction(void) {
+		#ifdef SPI_TRANSACTION_MISMATCH_LED
+		if (!inTransactionFlag) {
+			pinMode(SPI_TRANSACTION_MISMATCH_LED, OUTPUT);
+			digitalWrite(SPI_TRANSACTION_MISMATCH_LED, HIGH);
+		}
+		inTransactionFlag = 0;
+		#endif
 		if (interruptMode > 0) {
 			#ifdef SPI_AVR_EIMSK
 			if (interruptMode == 1) {
@@ -265,6 +285,9 @@ private:
 	static uint8_t interruptMode; // 0=none, 1=mask, 2=global
 	static uint8_t interruptMask; // which interrupts to mask
 	static uint8_t interruptSave; // temp storage, to restore state
+	#ifdef SPI_TRANSACTION_MISMATCH_LED
+	static uint8_t inTransactionFlag;
+	#endif
 };
 
 
@@ -402,27 +425,34 @@ public:
 		if (interruptMasksUsed) {
 			if (interruptMasksUsed & 0x01) {
 				interruptSave[0] = NVIC_ICER0 & interruptMask[0];
-				NVIC_ICER0 = interruptMask[0];
+				NVIC_ICER0 = interruptSave[0];
 			}
 			#if NVIC_NUM_INTERRUPTS > 32
 			if (interruptMasksUsed & 0x02) {
 				interruptSave[1] = NVIC_ICER1 & interruptMask[1];
-				NVIC_ICER1 = interruptMask[1];
+				NVIC_ICER1 = interruptSave[1];
 			}
 			#endif
 			#if NVIC_NUM_INTERRUPTS > 64 && defined(NVIC_ISER2)
 			if (interruptMasksUsed & 0x04) {
 				interruptSave[2] = NVIC_ICER2 & interruptMask[2];
-				NVIC_ICER2 = interruptMask[2];
+				NVIC_ICER2 = interruptSave[2];
 			}
 			#endif
 			#if NVIC_NUM_INTERRUPTS > 96 && defined(NVIC_ISER3)
 			if (interruptMasksUsed & 0x08) {
 				interruptSave[3] = NVIC_ICER3 & interruptMask[3];
-				NVIC_ICER3 = interruptMask[3];
+				NVIC_ICER3 = interruptSave[3];
 			}
 			#endif
 		}
+		#ifdef SPI_TRANSACTION_MISMATCH_LED
+		if (inTransactionFlag) {
+			pinMode(SPI_TRANSACTION_MISMATCH_LED, OUTPUT);
+			digitalWrite(SPI_TRANSACTION_MISMATCH_LED, HIGH);
+		}
+		inTransactionFlag = 1;
+		#endif
 		if (SPI0_CTAR0 != settings.ctar) {
 			SPI0_MCR = SPI_MCR_MDIS | SPI_MCR_HALT | SPI_MCR_PCSIS(0x1F);
 			SPI0_CTAR0 = settings.ctar;
@@ -462,6 +492,13 @@ public:
 	// After performing a group of transfers and releasing the chip select
 	// signal, this function allows others to access the SPI bus
 	inline static void endTransaction(void) {
+		#ifdef SPI_TRANSACTION_MISMATCH_LED
+		if (!inTransactionFlag) {
+			pinMode(SPI_TRANSACTION_MISMATCH_LED, OUTPUT);
+			digitalWrite(SPI_TRANSACTION_MISMATCH_LED, HIGH);
+		}
+		inTransactionFlag = 0;
+		#endif
 		if (interruptMasksUsed) {
 			if (interruptMasksUsed & 0x01) {
 				NVIC_ISER0 = interruptSave[0];
@@ -543,6 +580,9 @@ private:
 	static uint8_t interruptMasksUsed;
 	static uint32_t interruptMask[(NVIC_NUM_INTERRUPTS+31)/32];
 	static uint32_t interruptSave[(NVIC_NUM_INTERRUPTS+31)/32];
+	#ifdef SPI_TRANSACTION_MISMATCH_LED
+	static uint8_t inTransactionFlag;
+	#endif
 };
 
 

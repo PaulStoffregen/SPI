@@ -24,6 +24,9 @@ SPIClass SPI;
 uint8_t SPIClass::interruptMode = 0;
 uint8_t SPIClass::interruptMask = 0;
 uint8_t SPIClass::interruptSave = 0;
+#ifdef SPI_TRANSACTION_MISMATCH_LED
+uint8_t SPIClass::inTransactionFlag = 0;
+#endif
 
 void SPIClass::begin()
 {
@@ -146,6 +149,9 @@ SPIClass SPI;
 uint8_t SPIClass::interruptMasksUsed = 0;
 uint32_t SPIClass::interruptMask[(NVIC_NUM_INTERRUPTS+31)/32];
 uint32_t SPIClass::interruptSave[(NVIC_NUM_INTERRUPTS+31)/32];
+#ifdef SPI_TRANSACTION_MISMATCH_LED
+uint8_t SPIClass::inTransactionFlag = 0;
+#endif
 
 void SPIClass::begin()
 {
@@ -167,8 +173,15 @@ void SPIClass::usingInterrupt(IRQ_NUMBER_t interruptName)
 	uint32_t n = (uint32_t)interruptName;
 
 	if (n >= NVIC_NUM_INTERRUPTS) return;
+
+	Serial.print("usingInterrupt ");
+	Serial.println(n);
 	interruptMasksUsed |= (1 << (n >> 5));
 	interruptMask[n >> 5] |= (1 << (n & 0x1F));
+	Serial.printf("interruptMasksUsed = %d\n", interruptMasksUsed);
+	Serial.printf("interruptMask[0] = %08X\n", interruptMask[0]);
+	Serial.printf("interruptMask[1] = %08X\n", interruptMask[1]);
+	Serial.printf("interruptMask[2] = %08X\n", interruptMask[2]);
 }
 
 const uint16_t SPISettings::ctar_div_table[23] = {

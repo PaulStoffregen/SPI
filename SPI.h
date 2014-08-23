@@ -453,12 +453,7 @@ public:
 		}
 		inTransactionFlag = 1;
 		#endif
-		if (SPI0_CTAR0 != settings.ctar) {
-			SPI0_MCR = SPI_MCR_MDIS | SPI_MCR_HALT | SPI_MCR_PCSIS(0x1F);
-			SPI0_CTAR0 = settings.ctar;
-			SPI0_CTAR1 = settings.ctar| SPI_CTAR_FMSZ(8);
-			SPI0_MCR = SPI_MCR_MSTR | SPI_MCR_PCSIS(0x1F);
-		}
+		applySettings(settings);
 	}
 
 	// Write to the SPI bus (MOSI pin) and also receive (MISO pin)
@@ -488,7 +483,17 @@ public:
 		while (!(SPSR & _BV(SPIF))) ;
 		*p = SPDR;
 	}
-
+	
+	inline static void applySettings(const SPISettings& settings)
+	{
+		if (SPI0_CTAR0 != settings.ctar) {
+			SPI0_MCR = SPI_MCR_MDIS | SPI_MCR_HALT | SPI_MCR_PCSIS(0x1F);
+			SPI0_CTAR0 = settings.ctar;
+			SPI0_CTAR1 = settings.ctar| SPI_CTAR_FMSZ(8);
+			SPI0_MCR = SPI_MCR_MSTR | SPI_MCR_PCSIS(0x1F);
+		}
+	}
+	
 	// After performing a group of transfers and releasing the chip select
 	// signal, this function allows others to access the SPI bus
 	inline static void endTransaction(void) {

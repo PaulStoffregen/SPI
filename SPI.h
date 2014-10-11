@@ -298,6 +298,8 @@ private:
 
 #elif defined(__arm__) && defined(TEENSYDUINO)
 
+#define SPI_HAS_NOTUSINGINTERRUPT 1
+
 class SPISettings {
 public:
 	SPISettings(uint32_t clock, uint8_t bitOrder, uint8_t dataMode) {
@@ -417,6 +419,7 @@ public:
 		}
 	}
 	static void usingInterrupt(IRQ_NUMBER_t interruptName);
+	static void notUsingInterrupt(IRQ_NUMBER_t interruptName);
 
 	// Before using SPI.transfer() or asserting chip select pins,
 	// this function is used to gain exclusive access to the SPI bus

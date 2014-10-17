@@ -176,8 +176,9 @@ public:
 			} else
 			#endif
 			{
-				interruptSave = SREG;
+				uint8_t tmp = SREG;
 				cli();
+				interruptSave = tmp;
 			}
 		}
 		#ifdef SPI_TRANSACTION_MISMATCH_LED
@@ -426,6 +427,7 @@ public:
 	// and configure the correct settings.
 	inline static void beginTransaction(SPISettings settings) {
 		if (interruptMasksUsed) {
+			__disable_irq();
 			if (interruptMasksUsed & 0x01) {
 				interruptSave[0] = NVIC_ICER0 & interruptMask[0];
 				NVIC_ICER0 = interruptSave[0];
@@ -448,6 +450,7 @@ public:
 				NVIC_ICER3 = interruptSave[3];
 			}
 			#endif
+			__enable_irq();
 		}
 		#ifdef SPI_TRANSACTION_MISMATCH_LED
 		if (inTransactionFlag) {

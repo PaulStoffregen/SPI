@@ -157,7 +157,7 @@ public:
 	// Initialize the SPI library
 	static void begin();
 
-	// If SPI is to used from within an interrupt, this function registers
+	// If SPI is used from within an interrupt, this function registers
 	// that interrupt with the SPI library, so beginTransaction() can
 	// prevent conflicts.  The input interruptNumber is the number used
 	// with attachInterrupt.  If SPI is used from a different interrupt

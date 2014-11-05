@@ -202,20 +202,24 @@ public:
 	inline static uint16_t transfer16(uint16_t data) {
 		union { uint16_t val; struct { uint8_t lsb; uint8_t msb; }; } in, out;
 		in.val = data;
-		if (!(SPCR & _BV(DORD))) {
-			SPDR = in.msb;
-			while (!(SPSR & _BV(SPIF))) ;
-			out.msb = SPDR;
+		if ((SPCR & _BV(DORD))) {
 			SPDR = in.lsb;
+			asm volatile("nop");
 			while (!(SPSR & _BV(SPIF))) ;
 			out.lsb = SPDR;
+			SPDR = in.msb;
+			asm volatile("nop");
+			while (!(SPSR & _BV(SPIF))) ;
+			out.msb = SPDR;
 		} else {
-			SPDR = in.lsb;
-			while (!(SPSR & _BV(SPIF))) ;
-			out.lsb = SPDR;
 			SPDR = in.msb;
+			asm volatile("nop");
 			while (!(SPSR & _BV(SPIF))) ;
 			out.msb = SPDR;
+			SPDR = in.lsb;
+			asm volatile("nop");
+			while (!(SPSR & _BV(SPIF))) ;
+			out.lsb = SPDR;
 		}
 		return out.val;
 	}

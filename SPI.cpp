@@ -97,10 +97,11 @@ void SPIClass::end() {
 
 void SPIClass::usingInterrupt(uint8_t interruptNumber)
 {
-	uint8_t mask;
+	uint8_t stmp, mask;
 
 	if (interruptMode > 1) return;
 
+	stmp = SREG;
 	noInterrupts();
 	switch (interruptNumber) {
 	#ifdef SPI_INT0_MASK
@@ -129,12 +130,12 @@ void SPIClass::usingInterrupt(uint8_t interruptNumber)
 	#endif
 	default:
 		interruptMode = 2;
-		interrupts();
+		SREG = stmp;
 		return;
 	}
 	interruptMode = 1;
 	interruptMask |= mask;
-	interrupts();
+	SREG = stmp;
 }
 
 

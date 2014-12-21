@@ -18,6 +18,7 @@
 // SPI_HAS_TRANSACTION means SPI has beginTransaction(), endTransaction(),
 // usingInterrupt(), and SPISetting(clock, bitOrder, dataMode)
 #define SPI_HAS_TRANSACTION 1
+#define SPI_ATOMIC_VERSION  1
 
 // Uncomment this line to add detection of mismatched begin/end transactions.
 // A mismatch occurs if other libraries fail to use SPI.endTransaction() for

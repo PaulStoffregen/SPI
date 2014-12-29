@@ -19,13 +19,21 @@
 
 #if defined(__AVR__)
 
+#include <avr/interrupt.h>
+
 SPIClass SPI;
 
 uint8_t SPIClass::interruptMode = 0;
 uint8_t SPIClass::interruptMask = 0;
 uint8_t SPIClass::interruptSave = 0;
-#ifdef SPI_TRANSACTION_MISMATCH_LED
 uint8_t SPIClass::inTransactionFlag = 0;
+
+#ifdef SPI_QUEUED_TRANSFERS
+
+SPIQueuedTransfer *SPIClass::nextTransfer = NULL; //Stores the next transfer, or NULL if there aren't any
+SPIQueuedTransfer *SPIClass::curTransfer  = NULL;  //Currently in-progress transfer, or NULL if there isn't any
+uint8_t SPIClass::curTransferPos          = 0; //Position in the current byte being read/written
+
 #endif
 
 void SPIClass::begin()
@@ -138,6 +146,42 @@ void SPIClass::usingInterrupt(uint8_t interruptNumber)
 	SREG = stmp;
 }
 
+#ifdef SPI_QUEUED_TRANSFERS
+
+inline void spi_isr(void) __attribute__((always_inline));
+/*
+ * ISR to keep pumping queued transfers out the SPI interface
+ */
+ISR(SPI_STC_vect) {
+	spi_isr();
+}
+
+inline void spi_isr(void) {
+	digitalWrite(14, 1);
+	uint8_t *buf = SPI.curTransfer->buffer;
+	uint8_t  pos = SPI.curTransferPos;
+	uint8_t  len = SPI.curTransfer->len;
+
+	buf[pos++] = SPDR;
+	if(pos < len) {
+		//More bytes to transfer
+		SPDR = buf[pos];
+		SPI.curTransferPos = pos;
+	} else {
+		//Complete this transfer, move on if there's another
+
+		//Deassert Chip
+		digitalWrite(SPI.curTransfer->cs_pin, !SPI.curTransfer->assert_state);
+
+		//2. Look for next queued transfer
+		SPI.inTransactionFlag = 0;
+		SPI.workTransferQueue();
+	}
+	digitalWrite(14,0);
+}
+
+
+#endif
 
 /**********************************************************/
 /*     32 bit Teensy 3.0 and 3.1			  */

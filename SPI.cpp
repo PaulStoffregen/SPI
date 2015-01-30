@@ -143,7 +143,7 @@ void SPIClass::usingInterrupt(uint8_t interruptNumber)
 /*     32 bit Teensy 3.0 and 3.1			  */
 /**********************************************************/
 
-#elif defined(__arm__) && defined(TEENSYDUINO)
+#elif defined(__arm__) && defined(TEENSYDUINO) && defined(KINETISK)
 
 SPIClass SPI;
 
@@ -306,6 +306,86 @@ uint8_t SPIClass::setCS(uint8_t pin)
 	}
 	return 0;
 }
+
+
+/**********************************************************/
+/*     32 bit Teensy-LC                                   */
+/**********************************************************/
+
+#elif defined(__arm__) && defined(TEENSYDUINO) && defined(KINETISL)
+
+SPIClass SPI;
+
+uint32_t SPIClass::interruptMask = 0;
+uint32_t SPIClass::interruptSave = 0;
+#ifdef SPI_TRANSACTION_MISMATCH_LED
+uint8_t SPIClass::inTransactionFlag = 0;
+#endif
+
+void SPIClass::begin()
+{
+	SIM_SCGC4 |= SIM_SCGC4_SPI0;
+	SPI0_C1 = SPI_C1_SPE | SPI_C1_MSTR;
+	SPI0_C2 = 0;
+	uint8_t tmp __attribute__((unused)) = SPI0_S;
+	SPCR.enable_pins(); // pins managed by SPCRemulation in avr_emulation.h
+}
+
+void SPIClass::end() {
+	SPCR.disable_pins();
+	SPI0_C1 = 0;
+}
+
+const uint16_t SPISettings::br_div_table[30] = {
+	2, 4, 6, 8, 10, 12, 14, 16, 20, 24,
+	28, 32, 40, 48, 56, 64, 80, 96, 112, 128,
+	160, 192, 224, 256, 320, 384, 448, 512, 640, 768,
+};
+
+const uint8_t SPISettings::br_clock_table[30] = {
+	SPI_BR_SPPR(0) | SPI_BR_SPR(0),
+	SPI_BR_SPPR(1) | SPI_BR_SPR(0),
+	SPI_BR_SPPR(2) | SPI_BR_SPR(0),
+	SPI_BR_SPPR(3) | SPI_BR_SPR(0),
+	SPI_BR_SPPR(4) | SPI_BR_SPR(0),
+	SPI_BR_SPPR(5) | SPI_BR_SPR(0),
+	SPI_BR_SPPR(6) | SPI_BR_SPR(0),
+	SPI_BR_SPPR(7) | SPI_BR_SPR(0),
+	SPI_BR_SPPR(4) | SPI_BR_SPR(1),
+	SPI_BR_SPPR(5) | SPI_BR_SPR(1),
+	SPI_BR_SPPR(6) | SPI_BR_SPR(1),
+	SPI_BR_SPPR(7) | SPI_BR_SPR(1),
+	SPI_BR_SPPR(4) | SPI_BR_SPR(2),
+	SPI_BR_SPPR(5) | SPI_BR_SPR(2),
+	SPI_BR_SPPR(6) | SPI_BR_SPR(2),
+	SPI_BR_SPPR(7) | SPI_BR_SPR(2),
+	SPI_BR_SPPR(4) | SPI_BR_SPR(3),
+	SPI_BR_SPPR(5) | SPI_BR_SPR(3),
+	SPI_BR_SPPR(6) | SPI_BR_SPR(3),
+	SPI_BR_SPPR(7) | SPI_BR_SPR(3),
+	SPI_BR_SPPR(4) | SPI_BR_SPR(4),
+	SPI_BR_SPPR(5) | SPI_BR_SPR(4),
+	SPI_BR_SPPR(6) | SPI_BR_SPR(4),
+	SPI_BR_SPPR(7) | SPI_BR_SPR(4),
+	SPI_BR_SPPR(4) | SPI_BR_SPR(5),
+	SPI_BR_SPPR(5) | SPI_BR_SPR(5),
+	SPI_BR_SPPR(6) | SPI_BR_SPR(5),
+	SPI_BR_SPPR(7) | SPI_BR_SPR(5),
+	SPI_BR_SPPR(4) | SPI_BR_SPR(6),
+	SPI_BR_SPPR(5) | SPI_BR_SPR(6)
+};
+
+uint8_t SPIClass::setCS(uint8_t pin)
+{
+	switch (pin) {
+	  case 10: CORE_PIN10_CONFIG = PORT_PCR_MUX(2); return 0x01; // PTC4
+	  case 2:  CORE_PIN2_CONFIG  = PORT_PCR_MUX(2); return 0x01; // PTD0
+	}
+	return 0;
+}
+
+
+
 
 
 /**********************************************************/

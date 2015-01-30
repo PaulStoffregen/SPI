@@ -18,7 +18,6 @@
 // SPI_HAS_TRANSACTION means SPI has beginTransaction(), endTransaction(),
 // usingInterrupt(), and SPISetting(clock, bitOrder, dataMode)
 #define SPI_HAS_TRANSACTION 1
-#define SPI_ATOMIC_VERSION  1
 
 // Uncomment this line to add detection of mismatched begin/end transactions.
 // A mismatch occurs if other libraries fail to use SPI.endTransaction() for
@@ -302,7 +301,7 @@ private:
 /*     32 bit Teensy 3.0 and 3.1			  */
 /**********************************************************/
 
-#elif defined(__arm__) && defined(TEENSYDUINO)
+#elif defined(__arm__) && defined(TEENSYDUINO) && defined(KINETISK)
 
 #define SPI_HAS_NOTUSINGINTERRUPT 1
 
@@ -595,6 +594,278 @@ private:
 	static uint8_t inTransactionFlag;
 	#endif
 };
+
+
+
+
+
+
+
+
+
+
+/**********************************************************/
+/*     32 bit Teensy-LC					  */
+/**********************************************************/
+
+#elif defined(__arm__) && defined(TEENSYDUINO) && defined(KINETISL)
+
+class SPISettings {
+public:
+	SPISettings(uint32_t clock, uint8_t bitOrder, uint8_t dataMode) {
+		if (__builtin_constant_p(clock)) {
+			init_AlwaysInline(clock, bitOrder, dataMode);
+		} else {
+			init_MightInline(clock, bitOrder, dataMode);
+		}
+	}
+	SPISettings() {
+		init_AlwaysInline(4000000, MSBFIRST, SPI_MODE0);
+	}
+private:
+	void init_MightInline(uint32_t clock, uint8_t bitOrder, uint8_t dataMode) {
+		init_AlwaysInline(clock, bitOrder, dataMode);
+	}
+	void init_AlwaysInline(uint32_t clock, uint8_t bitOrder, uint8_t dataMode)
+	  __attribute__((__always_inline__)) {
+		uint8_t c = SPI_C1_MSTR | SPI_C1_SPE;
+		if (dataMode & 0x04) c |= SPI_C1_CPHA;
+		if (dataMode & 0x08) c |= SPI_C1_CPOL;
+		if (bitOrder == LSBFIRST) c |= SPI_C1_LSBFE;
+		c1 = c;
+		if (__builtin_constant_p(clock)) {
+			  if	  (clock >= F_BUS /   2) { c = SPI_BR_SPPR(0) | SPI_BR_SPR(0);
+			} else if (clock >= F_BUS /   4) { c = SPI_BR_SPPR(1) | SPI_BR_SPR(0);
+			} else if (clock >= F_BUS /   6) { c = SPI_BR_SPPR(2) | SPI_BR_SPR(0);
+			} else if (clock >= F_BUS /   8) { c = SPI_BR_SPPR(3) | SPI_BR_SPR(0);
+			} else if (clock >= F_BUS /  10) { c = SPI_BR_SPPR(4) | SPI_BR_SPR(0);
+			} else if (clock >= F_BUS /  12) { c = SPI_BR_SPPR(5) | SPI_BR_SPR(0);
+			} else if (clock >= F_BUS /  14) { c = SPI_BR_SPPR(6) | SPI_BR_SPR(0);
+			} else if (clock >= F_BUS /  16) { c = SPI_BR_SPPR(7) | SPI_BR_SPR(0);
+			} else if (clock >= F_BUS /  20) { c = SPI_BR_SPPR(4) | SPI_BR_SPR(1);
+			} else if (clock >= F_BUS /  24) { c = SPI_BR_SPPR(5) | SPI_BR_SPR(1);
+			} else if (clock >= F_BUS /  28) { c = SPI_BR_SPPR(6) | SPI_BR_SPR(1);
+			} else if (clock >= F_BUS /  32) { c = SPI_BR_SPPR(7) | SPI_BR_SPR(1);
+			} else if (clock >= F_BUS /  40) { c = SPI_BR_SPPR(4) | SPI_BR_SPR(2);
+			} else if (clock >= F_BUS /  48) { c = SPI_BR_SPPR(5) | SPI_BR_SPR(2);
+			} else if (clock >= F_BUS /  56) { c = SPI_BR_SPPR(6) | SPI_BR_SPR(2);
+			} else if (clock >= F_BUS /  64) { c = SPI_BR_SPPR(7) | SPI_BR_SPR(2);
+			} else if (clock >= F_BUS /  80) { c = SPI_BR_SPPR(4) | SPI_BR_SPR(3);
+			} else if (clock >= F_BUS /  96) { c = SPI_BR_SPPR(5) | SPI_BR_SPR(3);
+			} else if (clock >= F_BUS / 112) { c = SPI_BR_SPPR(6) | SPI_BR_SPR(3);
+			} else if (clock >= F_BUS / 128) { c = SPI_BR_SPPR(7) | SPI_BR_SPR(3);
+			} else if (clock >= F_BUS / 160) { c = SPI_BR_SPPR(4) | SPI_BR_SPR(4);
+			} else if (clock >= F_BUS / 192) { c = SPI_BR_SPPR(5) | SPI_BR_SPR(4);
+			} else if (clock >= F_BUS / 224) { c = SPI_BR_SPPR(6) | SPI_BR_SPR(4);
+			} else if (clock >= F_BUS / 256) { c = SPI_BR_SPPR(7) | SPI_BR_SPR(4);
+			} else if (clock >= F_BUS / 320) { c = SPI_BR_SPPR(4) | SPI_BR_SPR(5);
+			} else if (clock >= F_BUS / 384) { c = SPI_BR_SPPR(5) | SPI_BR_SPR(5);
+			} else if (clock >= F_BUS / 448) { c = SPI_BR_SPPR(6) | SPI_BR_SPR(5);
+			} else if (clock >= F_BUS / 512) { c = SPI_BR_SPPR(7) | SPI_BR_SPR(5);
+			} else if (clock >= F_BUS / 640) { c = SPI_BR_SPPR(4) | SPI_BR_SPR(6);
+			} else      /* F_BUS / 768 */    { c = SPI_BR_SPPR(5) | SPI_BR_SPR(6);
+			}
+		} else {
+			for (uint32_t i=0; i<30; i++) {
+				c = br_clock_table[i];
+				if (clock >= F_BUS / br_div_table[i]) break;
+			}
+		}
+		br = c;
+	}
+	static const uint8_t  br_clock_table[30];
+	static const uint16_t br_div_table[30];
+	uint8_t c1, br;
+	friend class SPIClass;
+};
+
+
+class SPIClass {
+public:
+	// Initialize the SPI library
+	static void begin();
+
+	// If SPI is to used from within an interrupt, this function registers
+	// that interrupt with the SPI library, so beginTransaction() can
+	// prevent conflicts.  The input interruptNumber is the number used
+	// with attachInterrupt.  If SPI is used from a different interrupt
+	// (eg, a timer), interruptNumber should be 255.
+	static void usingInterrupt(uint8_t n) {
+		if (n == 3 || n == 4) {
+			usingInterrupt(IRQ_PORTA);
+		} else if ((n >= 2 && n <= 15) || (n >= 20 && n <= 23)) {
+			usingInterrupt(IRQ_PORTCD);
+		}
+	}
+	static void usingInterrupt(IRQ_NUMBER_t interruptName) {
+		uint32_t n = (uint32_t)interruptName;
+		if (n < NVIC_NUM_INTERRUPTS) interruptMask |= (1 << n);
+	}
+	static void notUsingInterrupt(IRQ_NUMBER_t interruptName) {
+		uint32_t n = (uint32_t)interruptName;
+		if (n < NVIC_NUM_INTERRUPTS) interruptMask &= ~(1 << n);
+	}
+
+	// Before using SPI.transfer() or asserting chip select pins,
+	// this function is used to gain exclusive access to the SPI bus
+	// and configure the correct settings.
+	inline static void beginTransaction(SPISettings settings) {
+		if (interruptMask) {
+			__disable_irq();
+			interruptSave = NVIC_ICER0 & interruptMask;
+			NVIC_ICER0 = interruptSave;
+			__enable_irq();
+		}
+		#ifdef SPI_TRANSACTION_MISMATCH_LED
+		if (inTransactionFlag) {
+			pinMode(SPI_TRANSACTION_MISMATCH_LED, OUTPUT);
+			digitalWrite(SPI_TRANSACTION_MISMATCH_LED, HIGH);
+		}
+		inTransactionFlag = 1;
+		#endif
+		SPI0_C1 = settings.c1;
+		SPI0_BR = settings.br;
+	}
+
+	// Write to the SPI bus (MOSI pin) and also receive (MISO pin)
+	inline static uint8_t transfer(uint8_t data) {
+		SPI0_DL = data;
+		while (!(SPI0_S & SPI_S_SPRF)) ; // wait
+		return SPI0_DL;
+	}
+	inline static uint8_t transfer16(uint16_t data) {
+		SPI0_C2 = SPI_C2_SPIMODE;
+		SPI0_DH = data >> 8;
+		SPI0_DL = data;
+		while (!(SPI0_S & SPI_S_SPRF)) ; // wait
+		uint16_t r = (SPI0_DH << 8) | SPI0_DL;
+		SPI0_C2 = 0;
+		return r;
+	}
+	inline static void transfer(void *buf, size_t count) {
+		if (count == 0) return;
+		uint8_t *p = (uint8_t *)buf;
+		while (!(SPI0_S & SPI_S_SPTEF)) ; // wait
+		SPI0_DL = *p;
+		while (--count > 0) {
+			uint8_t out = *(p + 1);
+			while (!(SPI0_S & SPI_S_SPTEF)) ; // wait
+			__disable_irq();
+			SPI0_DL = out;
+			while (!(SPI0_S & SPI_S_SPRF)) ; // wait
+			uint8_t in = SPI0_DL;
+			__enable_irq();
+			*p++ = in;
+		}
+		while (!(SPI0_S & SPI_S_SPRF)) ; // wait
+		*p = SPDR;
+	}
+
+	// After performing a group of transfers and releasing the chip select
+	// signal, this function allows others to access the SPI bus
+	inline static void endTransaction(void) {
+		#ifdef SPI_TRANSACTION_MISMATCH_LED
+		if (!inTransactionFlag) {
+			pinMode(SPI_TRANSACTION_MISMATCH_LED, OUTPUT);
+			digitalWrite(SPI_TRANSACTION_MISMATCH_LED, HIGH);
+		}
+		inTransactionFlag = 0;
+		#endif
+		if (interruptMask) {
+			NVIC_ISER0 = interruptSave;
+		}
+	}
+
+	// Disable the SPI bus
+	static void end();
+
+	// This function is deprecated.	 New applications should use
+	// beginTransaction() to configure SPI settings.
+	static void setBitOrder(uint8_t bitOrder) {
+		uint8_t c = SPI0_C1 | SPI_C1_SPE;
+		if (bitOrder == LSBFIRST) c |= SPI_C1_LSBFE;
+		else c &= ~SPI_C1_LSBFE;
+		SPI0_C1 = c;
+	}
+
+	// This function is deprecated.	 New applications should use
+	// beginTransaction() to configure SPI settings.
+	static void setDataMode(uint8_t dataMode) {
+		uint8_t c = SPI0_C1 | SPI_C1_SPE;
+		if (dataMode & 0x04) c |= SPI_C1_CPHA;
+		else c &= ~SPI_C1_CPHA;
+		if (dataMode & 0x08) c |= SPI_C1_CPOL;
+		else c &= ~SPI_C1_CPOL;
+		SPI0_C1 = c;
+	}
+
+	// This function is deprecated.	 New applications should use
+	// beginTransaction() to configure SPI settings.
+	inline static void setClockDivider(uint8_t clockDiv) {
+		if (clockDiv == SPI_CLOCK_DIV2) {
+			SPI0_BR = (SPISettings(8000000, MSBFIRST, SPI_MODE0).br);
+		} else if (clockDiv == SPI_CLOCK_DIV4) {
+			SPI0_BR = (SPISettings(4000000, MSBFIRST, SPI_MODE0).br);
+		} else if (clockDiv == SPI_CLOCK_DIV8) {
+			SPI0_BR = (SPISettings(2000000, MSBFIRST, SPI_MODE0).br);
+		} else if (clockDiv == SPI_CLOCK_DIV16) {
+			SPI0_BR = (SPISettings(1000000, MSBFIRST, SPI_MODE0).br);
+		} else if (clockDiv == SPI_CLOCK_DIV32) {
+			SPI0_BR = (SPISettings(500000, MSBFIRST, SPI_MODE0).br);
+		} else if (clockDiv == SPI_CLOCK_DIV64) {
+			SPI0_BR = (SPISettings(250000, MSBFIRST, SPI_MODE0).br);
+		} else { /* clockDiv == SPI_CLOCK_DIV128 */
+			SPI0_BR = (SPISettings(125000, MSBFIRST, SPI_MODE0).br);
+		}
+	}
+
+	// These undocumented functions should not be used.  SPI.transfer()
+	// polls the hardware flag which is automatically cleared as the
+	// AVR responds to SPI's interrupt
+	inline static void attachInterrupt() { }
+	inline static void detachInterrupt() { }
+
+	// Teensy 3.x can use alternate pins for these 3 SPI signals.
+	inline static void setMOSI(uint8_t pin) __attribute__((always_inline)) {
+		SPCR.setMOSI(pin);
+	}
+	inline static void setMISO(uint8_t pin) __attribute__((always_inline)) {
+		SPCR.setMISO(pin);
+	}
+	inline static void setSCK(uint8_t pin) __attribute__((always_inline)) {
+		SPCR.setSCK(pin);
+	}
+	// return true if "pin" has special chip select capability
+	static bool pinIsChipSelect(uint8_t pin) { return (pin == 10 || pin == 2); }
+	// return true if both pin1 and pin2 have independent chip select capability
+	static bool pinIsChipSelect(uint8_t pin1, uint8_t pin2) { return false; }
+	// configure a pin for chip select and return its SPI_MCR_PCSIS bitmask
+	static uint8_t setCS(uint8_t pin);
+
+private:
+	//static uint8_t interruptMasksUsed;
+	static uint32_t interruptMask;
+	static uint32_t interruptSave;
+	#ifdef SPI_TRANSACTION_MISMATCH_LED
+	static uint8_t inTransactionFlag;
+	#endif
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /**********************************************************/

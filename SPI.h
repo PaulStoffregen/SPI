@@ -546,7 +546,7 @@ public:
 	// beginTransaction() to configure SPI settings.
 	inline static void setClockDivider(uint8_t clockDiv) {
 		if (clockDiv == SPI_CLOCK_DIV2) {
-			setClockDivider_noInline(SPISettings(8000000, MSBFIRST, SPI_MODE0).ctar);
+			setClockDivider_noInline(SPISettings(12000000, MSBFIRST, SPI_MODE0).ctar);
 		} else if (clockDiv == SPI_CLOCK_DIV4) {
 			setClockDivider_noInline(SPISettings(4000000, MSBFIRST, SPI_MODE0).ctar);
 		} else if (clockDiv == SPI_CLOCK_DIV8) {
@@ -843,7 +843,7 @@ public:
 	// beginTransaction() to configure SPI settings.
 	inline static void setClockDivider(uint8_t clockDiv) {
 		if (clockDiv == SPI_CLOCK_DIV2) {
-			SPI0_BR = (SPISettings(8000000, MSBFIRST, SPI_MODE0).br0);
+			SPI0_BR = (SPISettings(12000000, MSBFIRST, SPI_MODE0).br0);
 		} else if (clockDiv == SPI_CLOCK_DIV4) {
 			SPI0_BR = (SPISettings(4000000, MSBFIRST, SPI_MODE0).br0);
 		} else if (clockDiv == SPI_CLOCK_DIV8) {
@@ -1015,7 +1015,7 @@ public:
 	// beginTransaction() to configure SPI settings.
 	inline static void setClockDivider(uint8_t clockDiv) {
 		if (clockDiv == SPI_CLOCK_DIV2) {
-			SPI1_BR = (SPISettings(8000000, MSBFIRST, SPI_MODE0).br1);
+			SPI1_BR = (SPISettings(12000000, MSBFIRST, SPI_MODE0).br1);
 		} else if (clockDiv == SPI_CLOCK_DIV4) {
 			SPI1_BR = (SPISettings(4000000, MSBFIRST, SPI_MODE0).br1);
 		} else if (clockDiv == SPI_CLOCK_DIV8) {

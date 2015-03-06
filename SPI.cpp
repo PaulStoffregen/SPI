@@ -315,6 +315,7 @@ uint8_t SPIClass::setCS(uint8_t pin)
 #elif defined(__arm__) && defined(TEENSYDUINO) && defined(KINETISL)
 
 SPIClass SPI;
+SPI1Class SPI1;
 
 uint32_t SPIClass::interruptMask = 0;
 uint32_t SPIClass::interruptSave = 0;

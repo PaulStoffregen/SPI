@@ -935,7 +935,6 @@ public:
 		}
 		inTransactionFlag = 1;
 		#endif
-		//  TODO: this is wrong for SPI1 - how to make SPI settings scale?
 		SPI1_C1 = settings.c1;
 		SPI1_BR = settings.br1;
 	}
@@ -1014,7 +1013,6 @@ public:
 
 	// This function is deprecated.	 New applications should use
 	// beginTransaction() to configure SPI settings.
-	//  TODO: this is wrong for SPI1 - how to make SPI settings scale?
 	inline static void setClockDivider(uint8_t clockDiv) {
 		if (clockDiv == SPI_CLOCK_DIV2) {
 			SPI1_BR = (SPISettings(8000000, MSBFIRST, SPI_MODE0).br1);
@@ -1470,5 +1468,8 @@ class SPIClass {
 
 
 extern SPIClass SPI;
+#if defined(__arm__) && defined(TEENSYDUINO) && defined(KINETISL)
+extern SPI1Class SPI1;
+#endif
 
 #endif

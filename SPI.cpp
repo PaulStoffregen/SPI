@@ -318,8 +318,11 @@ SPIClass SPI;
 
 uint32_t SPIClass::interruptMask = 0;
 uint32_t SPIClass::interruptSave = 0;
+uint32_t SPI1Class::interruptMask = 0;
+uint32_t SPI1Class::interruptSave = 0;
 #ifdef SPI_TRANSACTION_MISMATCH_LED
 uint8_t SPIClass::inTransactionFlag = 0;
+uint8_t SPI1Class::inTransactionFlag = 0;
 #endif
 
 void SPIClass::begin()
@@ -384,6 +387,27 @@ uint8_t SPIClass::setCS(uint8_t pin)
 	return 0;
 }
 
+void SPI1Class::begin()
+{
+	SIM_SCGC4 |= SIM_SCGC4_SPI1;
+	SPI1_C1 = SPI_C1_SPE | SPI_C1_MSTR;
+	SPI1_C2 = 0;
+	uint8_t tmp __attribute__((unused)) = SPI1_S;
+	SPCR1.enable_pins(); // pins managed by SPCRemulation in avr_emulation.h
+}
+
+void SPI1Class::end() {
+	SPCR1.disable_pins();
+	SPI1_C1 = 0;
+}
+
+uint8_t SPI1Class::setCS(uint8_t pin)
+{
+	switch (pin) {
+	  case 6:  CORE_PIN6_CONFIG = PORT_PCR_MUX(2); return 0x01; // PTD4
+	}
+	return 0;
+}
 
 
 

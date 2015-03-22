@@ -865,7 +865,7 @@ public:
 	inline static void attachInterrupt() { }
 	inline static void detachInterrupt() { }
 
-	// Teensy 3.x can use alternate pins for these 3 SPI signals.
+	// Teensy LC can use alternate pins for these 3 SPI signals.
 	inline static void setMOSI(uint8_t pin) __attribute__((always_inline)) {
 		SPCR.setMOSI(pin);
 	}
@@ -1037,7 +1037,7 @@ public:
 	inline static void attachInterrupt() { }
 	inline static void detachInterrupt() { }
 
-	// Teensy 3.x can use alternate pins for these 3 SPI signals.
+	// Teensy LC can use alternate pins for these 3 SPI signals.
 	inline static void setMOSI(uint8_t pin) __attribute__((always_inline)) {
 		SPCR1.setMOSI(pin);
 	}

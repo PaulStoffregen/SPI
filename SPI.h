@@ -478,7 +478,7 @@ public:
 		while (!(SPI0_SR & SPI_SR_TCF)) ; // wait
 		return SPI0_POPR;
 	}
-	inline static uint8_t transfer16(uint16_t data) {
+	inline static uint16_t transfer16(uint16_t data) {
 		SPI0_SR = SPI_SR_TCF;
 		SPI0_PUSHR = data | SPI_PUSHR_CTAS(1);
 		while (!(SPI0_SR & SPI_SR_TCF)) ; // wait
@@ -773,13 +773,15 @@ public:
 		while (!(SPI0_S & SPI_S_SPRF)) ; // wait
 		return SPI0_DL;
 	}
-	inline static uint8_t transfer16(uint16_t data) {
+	inline static uint16_t transfer16(uint16_t data) {
 		SPI0_C2 = SPI_C2_SPIMODE;
-		SPI0_DH = data >> 8;
+		SPI0_S;
 		SPI0_DL = data;
+		SPI0_DH = data >> 8;
 		while (!(SPI0_S & SPI_S_SPRF)) ; // wait
-		uint16_t r = (SPI0_DH << 8) | SPI0_DL;
+		uint16_t r = SPI0_DL | (SPI0_DH << 8);
 		SPI0_C2 = 0;
+		SPI0_S;
 		return r;
 	}
 	inline static void transfer(void *buf, size_t count) {
@@ -945,13 +947,15 @@ public:
 		while (!(SPI1_S & SPI_S_SPRF)) ; // wait
 		return SPI1_DL;
 	}
-	inline static uint8_t transfer16(uint16_t data) {
+	inline static uint16_t transfer16(uint16_t data) {
 		SPI1_C2 = SPI_C2_SPIMODE;
-		SPI1_DH = data >> 8;
+		SPI1_S;
 		SPI1_DL = data;
+		SPI1_DH = data >> 8;
 		while (!(SPI1_S & SPI_S_SPRF)) ; // wait
-		uint16_t r = (SPI1_DH << 8) | SPI1_DL;
+		uint16_t r = SPI1_DL | (SPI1_DH << 8);
 		SPI1_C2 = 0;
+		SPI1_S;
 		return r;
 	}
 	inline static void transfer(void *buf, size_t count) {

@@ -96,6 +96,9 @@ unsigned int readRegister(byte thisRegister, int bytesToRead ) {
   // now combine the address and the command into one byte
   byte dataToSend = thisRegister & READ;
   Serial.println(thisRegister, BIN);
+  // gain control of the SPI port
+  // and configure settings
+  SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
   // take the chip select low to select the device:
   digitalWrite(chipSelectPin, LOW);
   // send the device the register you want to read:
@@ -116,6 +119,8 @@ unsigned int readRegister(byte thisRegister, int bytesToRead ) {
   }
   // take the chip select high to de-select:
   digitalWrite(chipSelectPin, HIGH);
+  // release control of the SPI port
+  SPI.endTransaction();
   // return the result:
   return(result);
 }
@@ -131,6 +136,9 @@ void writeRegister(byte thisRegister, byte thisValue) {
   // now combine the register address and the command into one byte:
   byte dataToSend = thisRegister | WRITE;
 
+  // gain control of the SPI port
+  // and configure settings
+  SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
   // take the chip select low to select the device:
   digitalWrite(chipSelectPin, LOW);
 
@@ -139,5 +147,7 @@ void writeRegister(byte thisRegister, byte thisValue) {
 
   // take the chip select high to de-select:
   digitalWrite(chipSelectPin, HIGH);
+  // release control of the SPI port
+  SPI.endTransaction();
 }
 

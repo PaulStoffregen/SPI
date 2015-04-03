@@ -27,7 +27,7 @@
 */
 
 
-// inslude the SPI library:
+// include the SPI library:
 #include <SPI.h>
 
 
@@ -37,6 +37,7 @@ const int slaveSelectPin = 10;
 void setup() {
   // set the slaveSelectPin as an output:
   pinMode (slaveSelectPin, OUTPUT);
+  pinMode (slaveSelectPin, HIGH);
   // initialize SPI:
   SPI.begin(); 
 }
@@ -61,11 +62,16 @@ void loop() {
 }
 
 void digitalPotWrite(int address, int value) {
+  // gain control of the SPI port
+  // and configure settings
+  SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
   // take the SS pin low to select the chip:
   digitalWrite(slaveSelectPin,LOW);
   //  send in the address and value via SPI:
   SPI.transfer(address);
   SPI.transfer(value);
   // take the SS pin high to de-select the chip:
-  digitalWrite(slaveSelectPin,HIGH); 
+  digitalWrite(slaveSelectPin,HIGH);
+  // release control of the SPI port
+  SPI.endTransaction();
 }

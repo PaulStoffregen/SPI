@@ -595,8 +595,18 @@ private:
 	#endif
 };
 
+#if defined(__MK64FX512__) || defined(__MK66FX1M0__)//Teensy 3.4/3.5
+// TODO
+class SPI1Class {
+public:
+private:
+};
 
-
+class SPI2Class {
+public:
+private:
+};
+#endif
 
 
 

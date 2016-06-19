@@ -146,8 +146,13 @@ void SPIClass::usingInterrupt(uint8_t interruptNumber)
 #elif defined(__arm__) && defined(TEENSYDUINO) && defined(KINETISK)
 
 SPIClass SPI;
+// TODO
+#if defined(__MK64FX512__) || defined(__MK66FX1M0__)//Teensy 3.4/3.5
+SPI1Class SPI1;
+SPI2Class SPI2;
+#endif
 
-uint8_t SPIClass::interruptMasksUsed = 0;
+uint8_t  SPIClass::interruptMasksUsed = 0;
 uint32_t SPIClass::interruptMask[(NVIC_NUM_INTERRUPTS+31)/32];
 uint32_t SPIClass::interruptSave[(NVIC_NUM_INTERRUPTS+31)/32];
 #ifdef SPI_TRANSACTION_MISMATCH_LED

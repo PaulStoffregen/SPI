@@ -314,6 +314,8 @@ uint8_t SPIClass::setCS(uint8_t pin)
 /*     32 bit Teensy-3.4/3.5                              */
 /**********************************************************/
 #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
+
+
 SPI1Class SPI1;
 
 uint8_t SPI1Class::interruptMasksUsed = 0;
@@ -383,7 +385,7 @@ static void updateCTAR1(uint32_t ctar)
 
 void SPI1Class::setBitOrder(uint8_t bitOrder)
 {
-	SIM_SCGC6 |= SIM_SCGC6_SPI0;
+	SIM_SCGC6 |= SIM_SCGC6_SPI1;//SIM_SCGC6_SPI0
 	uint32_t ctar = SPI1_CTAR0;
 	if (bitOrder == LSBFIRST) {
 		ctar |= SPI_CTAR_LSBFE;
@@ -395,7 +397,7 @@ void SPI1Class::setBitOrder(uint8_t bitOrder)
 
 void SPI1Class::setDataMode(uint8_t dataMode)
 {
-	SIM_SCGC6 |= SIM_SCGC6_SPI0;
+	SIM_SCGC6 |= SIM_SCGC6_SPI1;//SIM_SCGC6_SPI0
 
 	// TODO: implement with native code
 
@@ -404,7 +406,7 @@ void SPI1Class::setDataMode(uint8_t dataMode)
 
 void SPI1Class::setClockDivider_noInline(uint32_t clk)
 {
-	SIM_SCGC6 |= SIM_SCGC6_SPI0;
+	SIM_SCGC6 |= SIM_SCGC6_SPI1;//SIM_SCGC6_SPI0
 	uint32_t ctar = SPI1_CTAR0;
 	ctar &= (SPI_CTAR_CPOL | SPI_CTAR_CPHA | SPI_CTAR_LSBFE);
 	if (ctar & SPI_CTAR_CPHA) {

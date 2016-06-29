@@ -383,7 +383,7 @@ static void updateCTAR1(uint32_t ctar)
 
 void SPI1Class::setBitOrder(uint8_t bitOrder)
 {
-	SIM_SCGC6 |= SIM_SCGC6_SPI0;
+	SIM_SCGC6 |= SIM_SCGC6_SPI1;
 	uint32_t ctar = SPI1_CTAR0;
 	if (bitOrder == LSBFIRST) {
 		ctar |= SPI_CTAR_LSBFE;
@@ -395,7 +395,7 @@ void SPI1Class::setBitOrder(uint8_t bitOrder)
 
 void SPI1Class::setDataMode(uint8_t dataMode)
 {
-	SIM_SCGC6 |= SIM_SCGC6_SPI0;
+	SIM_SCGC6 |= SIM_SCGC6_SPI1;
 
 	// TODO: implement with native code
 
@@ -404,7 +404,7 @@ void SPI1Class::setDataMode(uint8_t dataMode)
 
 void SPI1Class::setClockDivider_noInline(uint32_t clk)
 {
-	SIM_SCGC6 |= SIM_SCGC6_SPI0;
+	SIM_SCGC6 |= SIM_SCGC6_SPI1;
 	uint32_t ctar = SPI1_CTAR0;
 	ctar &= (SPI_CTAR_CPOL | SPI_CTAR_CPHA | SPI_CTAR_LSBFE);
 	if (ctar & SPI_CTAR_CPHA) {

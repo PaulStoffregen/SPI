@@ -275,20 +275,33 @@ void SPIClass::setClockDivider_noInline(uint32_t clk)
 	updateCTAR(ctar);
 }
 
-bool SPIClass::pinIsChipSelect(uint8_t pin)
+uint8_t SPIClass::pinIsChipSelect(uint8_t pin)
 {
-	if (pin == 10 || pin == 9 || pin == 6 || pin == 2 || pin == 15) return true;
-	if (pin >= 20 && pin <= 23) return true;
-	return false;
+	switch (pin) {
+	  case 10: return 0x01; // PTC4
+	  case 2:  return 0x01; // PTD0
+	  case 9:  return 0x02; // PTC3
+	  case 6:  return 0x02; // PTD4
+	  case 20: return 0x04; // PTD5
+	  case 23: return 0x04; // PTC2
+	  case 21: return 0x08; // PTD6
+	  case 22: return 0x08; // PTC1
+	  case 15: return 0x10; // PTC0
+#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
+	  case 26: return 0x01;
+#endif
+	}
+
+    return 0;
 }
 
 bool SPIClass::pinIsChipSelect(uint8_t pin1, uint8_t pin2)
 {
-	if (!pinIsChipSelect(pin1) || !pinIsChipSelect(pin2)) return false;
-	if ((pin1 ==  2 && pin2 == 10) || (pin1 == 10 && pin2 ==  2)) return false;
-	if ((pin1 ==  6 && pin2 ==  9) || (pin1 ==  9 && pin2 ==  6)) return false;
-	if ((pin1 == 20 && pin2 == 23) || (pin1 == 23 && pin2 == 20)) return false;
-	if ((pin1 == 21 && pin2 == 22) || (pin1 == 22 && pin2 == 21)) return false;
+	uint8_t pin1_mask, pin2_mask;
+	if ((pin1_mask = (uint8_t)pinIsChipSelect(pin1)) == 0) return false;
+	if ((pin2_mask = (uint8_t)pinIsChipSelect(pin2)) == 0) return false;
+	Serial.printf("pinIsChipSelect %d %d %x %x\n\r", pin1, pin2, pin1_mask, pin2_mask);
+	if ((pin1_mask & pin2_mask) != 0) return false;
 	return true;
 }
 
@@ -398,8 +411,7 @@ void SPI1Class::setDataMode(uint8_t dataMode)
 	SIM_SCGC6 |= SIM_SCGC6_SPI1;
 
 	// TODO: implement with native code
-
-	SPCR = (SPCR & ~SPI_MODE_MASK) | dataMode;
+	SPCR1 = (SPCR1 & ~SPI_MODE_MASK) | dataMode;
 }
 
 void SPI1Class::setClockDivider_noInline(uint32_t clk)

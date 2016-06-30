@@ -583,7 +583,7 @@ public:
 		SPCR.setSCK(pin);
 	}
 	// return true if "pin" has special chip select capability
-	static bool pinIsChipSelect(uint8_t pin);
+	static uint8_t pinIsChipSelect(uint8_t pin);
 	// return true if both pin1 and pin2 have independent chip select capability
 	static bool pinIsChipSelect(uint8_t pin1, uint8_t pin2);
 	// configure a pin for chip select and return its SPI_MCR_PCSIS bitmask

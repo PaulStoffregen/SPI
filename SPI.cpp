@@ -48,7 +48,7 @@ void SPIClass::begin()
 	// MISO pin automatically overrides to INPUT.
 	// By doing this AFTER enabling SPI, we avoid accidentally
 	// clocking in a single bit since the lines go directly
-	// from "input" to SPI control.	 
+	// from "input" to SPI control.
 	// http://code.google.com/p/arduino/issues/detail?id=888
 	pinMode(SCK, OUTPUT);
 	pinMode(MOSI, OUTPUT);
@@ -144,6 +144,7 @@ void SPIClass::usingInterrupt(uint8_t interruptNumber)
 /**********************************************************/
 
 #elif defined(__arm__) && defined(TEENSYDUINO) && defined(KINETISK)
+
 
 SPIClass SPI;
 
@@ -274,20 +275,33 @@ void SPIClass::setClockDivider_noInline(uint32_t clk)
 	updateCTAR(ctar);
 }
 
-bool SPIClass::pinIsChipSelect(uint8_t pin)
+uint8_t SPIClass::pinIsChipSelect(uint8_t pin)
 {
-	if (pin == 10 || pin == 9 || pin == 6 || pin == 2 || pin == 15) return true;
-	if (pin >= 20 && pin <= 23) return true;
-	return false;
+	switch (pin) {
+	  case 10: return 0x01; // PTC4
+	  case 2:  return 0x01; // PTD0
+	  case 9:  return 0x02; // PTC3
+	  case 6:  return 0x02; // PTD4
+	  case 20: return 0x04; // PTD5
+	  case 23: return 0x04; // PTC2
+	  case 21: return 0x08; // PTD6
+	  case 22: return 0x08; // PTC1
+	  case 15: return 0x10; // PTC0
+#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
+	  case 26: return 0x01;
+#endif
+	}
+
+    return 0;
 }
 
 bool SPIClass::pinIsChipSelect(uint8_t pin1, uint8_t pin2)
 {
-	if (!pinIsChipSelect(pin1) || !pinIsChipSelect(pin2)) return false;
-	if ((pin1 ==  2 && pin2 == 10) || (pin1 == 10 && pin2 ==  2)) return false;
-	if ((pin1 ==  6 && pin2 ==  9) || (pin1 ==  9 && pin2 ==  6)) return false;
-	if ((pin1 == 20 && pin2 == 23) || (pin1 == 23 && pin2 == 20)) return false;
-	if ((pin1 == 21 && pin2 == 22) || (pin1 == 22 && pin2 == 21)) return false;
+	uint8_t pin1_mask, pin2_mask;
+	if ((pin1_mask = (uint8_t)pinIsChipSelect(pin1)) == 0) return false;
+	if ((pin2_mask = (uint8_t)pinIsChipSelect(pin2)) == 0) return false;
+	Serial.printf("pinIsChipSelect %d %d %x %x\n\r", pin1, pin2, pin1_mask, pin2_mask);
+	if ((pin1_mask & pin2_mask) != 0) return false;
 	return true;
 }
 
@@ -307,6 +321,131 @@ uint8_t SPIClass::setCS(uint8_t pin)
 	return 0;
 }
 
+
+
+/**********************************************************/
+/*     32 bit Teensy-3.4/3.5                              */
+/**********************************************************/
+#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
+SPI1Class SPI1;
+
+uint8_t SPI1Class::interruptMasksUsed = 0;
+uint32_t SPI1Class::interruptMask[(NVIC_NUM_INTERRUPTS+31)/32];
+uint32_t SPI1Class::interruptSave[(NVIC_NUM_INTERRUPTS+31)/32];
+#ifdef SPI_TRANSACTION_MISMATCH_LED
+uint8_t SPI1Class::inTransactionFlag = 0;
+#endif
+
+void SPI1Class::begin()
+{
+	SIM_SCGC6 |= SIM_SCGC6_SPI1;
+	SPI1_MCR = SPI_MCR_MDIS | SPI_MCR_HALT | SPI_MCR_PCSIS(0x1F);
+	SPI1_CTAR0 = SPI_CTAR_FMSZ(7) | SPI_CTAR_PBR(0) | SPI_CTAR_BR(1) | SPI_CTAR_CSSCK(1);
+	SPI1_CTAR1 = SPI_CTAR_FMSZ(15) | SPI_CTAR_PBR(0) | SPI_CTAR_BR(1) | SPI_CTAR_CSSCK(1);
+	SPI1_MCR = SPI_MCR_MSTR | SPI_MCR_PCSIS(0x1F);
+	SPCR1.enable_pins(); // pins managed by SPCRemulation in avr_emulation.h
+}
+
+void SPI1Class::end() {
+	SPCR1.disable_pins();
+	SPI1_MCR = SPI_MCR_MDIS | SPI_MCR_HALT | SPI_MCR_PCSIS(0x1F);
+}
+
+void SPI1Class::usingInterrupt(IRQ_NUMBER_t interruptName)
+{
+	uint32_t n = (uint32_t)interruptName;
+
+	if (n >= NVIC_NUM_INTERRUPTS) return;
+
+	//Serial.print("usingInterrupt ");
+	//Serial.println(n);
+	interruptMasksUsed |= (1 << (n >> 5));
+	interruptMask[n >> 5] |= (1 << (n & 0x1F));
+	//Serial.printf("interruptMasksUsed = %d\n", interruptMasksUsed);
+	//Serial.printf("interruptMask[0] = %08X\n", interruptMask[0]);
+	//Serial.printf("interruptMask[1] = %08X\n", interruptMask[1]);
+	//Serial.printf("interruptMask[2] = %08X\n", interruptMask[2]);
+}
+
+void SPI1Class::notUsingInterrupt(IRQ_NUMBER_t interruptName)
+{
+	uint32_t n = (uint32_t)interruptName;
+	if (n >= NVIC_NUM_INTERRUPTS) return;
+	interruptMask[n >> 5] &= ~(1 << (n & 0x1F));
+	if (interruptMask[n >> 5] == 0) {
+		interruptMasksUsed &= ~(1 << (n >> 5));
+	}
+}
+
+
+static void updateCTAR1(uint32_t ctar)
+{
+	if (SPI1_CTAR0 != ctar) {
+		uint32_t mcr = SPI1_MCR;
+		if (mcr & SPI_MCR_MDIS) {
+			SPI1_CTAR0 = ctar;
+			SPI1_CTAR1 = ctar | SPI_CTAR_FMSZ(8);
+		} else {
+			SPI1_MCR = SPI_MCR_MDIS | SPI_MCR_HALT | SPI_MCR_PCSIS(0x1F);
+			SPI1_CTAR0 = ctar;
+			SPI1_CTAR1 = ctar | SPI_CTAR_FMSZ(8);
+			SPI1_MCR = mcr;
+		}
+	}
+}
+
+void SPI1Class::setBitOrder(uint8_t bitOrder)
+{
+	SIM_SCGC6 |= SIM_SCGC6_SPI1;
+	uint32_t ctar = SPI1_CTAR0;
+	if (bitOrder == LSBFIRST) {
+		ctar |= SPI_CTAR_LSBFE;
+	} else {
+		ctar &= ~SPI_CTAR_LSBFE;
+	}
+	updateCTAR1(ctar);
+}
+
+void SPI1Class::setDataMode(uint8_t dataMode)
+{
+	SIM_SCGC6 |= SIM_SCGC6_SPI1;
+
+	// TODO: implement with native code
+	SPCR1 = (SPCR1 & ~SPI_MODE_MASK) | dataMode;
+}
+
+void SPI1Class::setClockDivider_noInline(uint32_t clk)
+{
+	SIM_SCGC6 |= SIM_SCGC6_SPI1;
+	uint32_t ctar = SPI1_CTAR0;
+	ctar &= (SPI_CTAR_CPOL | SPI_CTAR_CPHA | SPI_CTAR_LSBFE);
+	if (ctar & SPI_CTAR_CPHA) {
+		clk = (clk & 0xFFFF0FFF) | ((clk & 0xF000) >> 4);
+	}
+	ctar |= clk;
+	updateCTAR1(ctar);
+}
+
+bool SPI1Class::pinIsChipSelect(uint8_t pin)
+{
+	if (pin == 6 || pin == 31) return true;
+	return false;
+}
+
+bool SPI1Class::pinIsChipSelect(uint8_t pin1, uint8_t pin2)
+{
+	return false; // only one CS bith 6 and 31 or logially the same.
+}
+
+uint8_t SPI1Class::setCS(uint8_t pin)
+{
+	switch (pin) {
+	  case 6:  CORE_PIN6_CONFIG  = PORT_PCR_MUX(7); return 0x01; // PTD4
+	  case 31: CORE_PIN31_CONFIG = PORT_PCR_MUX(2); return 0x01; // PTD5
+	}
+	return 0;
+}
+#endif
 
 /**********************************************************/
 /*     32 bit Teensy-LC                                   */

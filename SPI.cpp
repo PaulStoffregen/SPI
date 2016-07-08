@@ -300,7 +300,7 @@ bool SPIClass::pinIsChipSelect(uint8_t pin1, uint8_t pin2)
 	uint8_t pin1_mask, pin2_mask;
 	if ((pin1_mask = (uint8_t)pinIsChipSelect(pin1)) == 0) return false;
 	if ((pin2_mask = (uint8_t)pinIsChipSelect(pin2)) == 0) return false;
-	Serial.printf("pinIsChipSelect %d %d %x %x\n\r", pin1, pin2, pin1_mask, pin2_mask);
+	//Serial.printf("pinIsChipSelect %d %d %x %x\n\r", pin1, pin2, pin1_mask, pin2_mask);
 	if ((pin1_mask & pin2_mask) != 0) return false;
 	return true;
 }

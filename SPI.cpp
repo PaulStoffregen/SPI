@@ -317,6 +317,9 @@ uint8_t SPIClass::setCS(uint8_t pin)
 	  case 21: CORE_PIN21_CONFIG = PORT_PCR_MUX(2); return 0x08; // PTD6
 	  case 22: CORE_PIN22_CONFIG = PORT_PCR_MUX(2); return 0x08; // PTC1
 	  case 15: CORE_PIN15_CONFIG = PORT_PCR_MUX(2); return 0x10; // PTC0
+#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
+	  case 26: CORE_PIN26_CONFIG = PORT_PCR_MUX(2);return 0x01;
+#endif
 	}
 	return 0;
 }

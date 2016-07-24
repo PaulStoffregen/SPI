@@ -429,15 +429,28 @@ void SPI1Class::setClockDivider_noInline(uint32_t clk)
 	updateCTAR1(ctar);
 }
 
-bool SPI1Class::pinIsChipSelect(uint8_t pin)
+uint8_t SPI1Class::pinIsChipSelect(uint8_t pin)
 {
-	if (pin == 6 || pin == 31) return true;
-	return false;
+	switch (pin) {
+	  case 6:  return 0x01; // CS0
+	  case 31: return 0x01; // CS0
+#ifdef USE_SDCARD_PINS	
+	  case 58: return 0x02;	//CS1
+	  case 62: return 0x01;	//CS0
+	  case 63: return 0x04;	//CS2
+#endif
+	}
+	return 0;
 }
 
 bool SPI1Class::pinIsChipSelect(uint8_t pin1, uint8_t pin2)
 {
-	return false; // only one CS bith 6 and 31 or logially the same.
+	uint8_t pin1_mask, pin2_mask;
+	if ((pin1_mask = (uint8_t)pinIsChipSelect(pin1)) == 0) return false;
+	if ((pin2_mask = (uint8_t)pinIsChipSelect(pin2)) == 0) return false;
+	//Serial.printf("pinIsChipSelect %d %d %x %x\n\r", pin1, pin2, pin1_mask, pin2_mask);
+	if ((pin1_mask & pin2_mask) != 0) return false;
+	return true;
 }
 
 uint8_t SPI1Class::setCS(uint8_t pin)
@@ -445,6 +458,11 @@ uint8_t SPI1Class::setCS(uint8_t pin)
 	switch (pin) {
 	  case 6:  CORE_PIN6_CONFIG  = PORT_PCR_MUX(7); return 0x01; // PTD4
 	  case 31: CORE_PIN31_CONFIG = PORT_PCR_MUX(2); return 0x01; // PTD5
+#ifdef USE_SDCARD_PINS	
+	  case 58: CORE_PIN58_CONFIG = PORT_PCR_MUX(2); return 0x02;	//CS1
+	  case 62: CORE_PIN62_CONFIG = PORT_PCR_MUX(2); return 0x01;	//CS0
+	  case 63: CORE_PIN63_CONFIG = PORT_PCR_MUX(2); return 0x04;	//CS2
+#endif
 	}
 	return 0;
 }

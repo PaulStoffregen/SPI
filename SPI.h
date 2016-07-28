@@ -601,7 +601,7 @@ private:
 
 
 /**********************************************************/
-/*     Teensy 3.4 and 3.5 have SPI1 as well				  */
+/*     Teensy 3.5 and 3.6 have SPI1 as well				  */
 /**********************************************************/
 #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
 class SPI1Class {

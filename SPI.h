@@ -1863,5 +1863,6 @@ extern SPI1Class SPI1;
 #endif
 #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
 extern SPI1Class SPI1;
+extern SPI2Class SPI2;
 #endif
 #endif

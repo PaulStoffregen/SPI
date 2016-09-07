@@ -289,6 +289,7 @@ uint8_t SPIClass::pinIsChipSelect(uint8_t pin)
 	  case 15: return 0x10; // PTC0
 #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
 	  case 26: return 0x01;
+	  case 45: return 0x20; // CS5
 #endif
 	}
 
@@ -319,6 +320,7 @@ uint8_t SPIClass::setCS(uint8_t pin)
 	  case 15: CORE_PIN15_CONFIG = PORT_PCR_MUX(2); return 0x10; // PTC0
 #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
 	  case 26: CORE_PIN26_CONFIG = PORT_PCR_MUX(2);return 0x01;
+	  case 45: CORE_PIN45_CONFIG = PORT_PCR_MUX(3);return 0x20;
 #endif
 	}
 	return 0;

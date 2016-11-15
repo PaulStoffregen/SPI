@@ -305,7 +305,7 @@ private:
 
 #define SPI_HAS_NOTUSINGINTERRUPT 1
 
-const IRQ_NUMBER_t _pinToIntnum[] = {
+const IRQ_NUMBER_t _pinToIntnum[CORE_NUM_TOTAL_PINS] = {
 			IRQ_PORTB, IRQ_PORTB, IRQ_PORTD, IRQ_PORTA, // 0, 1, 2, 3
 			IRQ_PORTA, IRQ_PORTD, IRQ_PORTD, IRQ_PORTD, // 4, 5, 6, 7
 			IRQ_PORTD, IRQ_PORTC, IRQ_PORTC, IRQ_PORTC, // 8, 9,10,11
@@ -437,7 +437,7 @@ public:
 	// (eg, a timer), interruptNumber should be 255.
 
 	static void usingInterrupt(uint8_t n) {
-		usingInterrupt(_pinToIntnum[n]);
+		if (n < CORE_NUM_TOTAL_PINS)  usingInterrupt(_pinToIntnum[n]);
 	}
 	static void usingInterrupt(IRQ_NUMBER_t interruptName);
 	static void notUsingInterrupt(IRQ_NUMBER_t interruptName);
@@ -627,7 +627,7 @@ public:
 	// with attachInterrupt.  If SPI is used from a different interrupt
 	// (eg, a timer), interruptNumber should be 255.
 	static void usingInterrupt(uint8_t n) {
-		usingInterrupt(_pinToIntnum[n]);
+		if (n < CORE_NUM_TOTAL_PINS) usingInterrupt(_pinToIntnum[n]);
 	}
 	static void usingInterrupt(IRQ_NUMBER_t interruptName);
 	static void notUsingInterrupt(IRQ_NUMBER_t interruptName);
@@ -804,7 +804,7 @@ public:
 	// with attachInterrupt.  If SPI is used from a different interrupt
 	// (eg, a timer), interruptNumber should be 255.
 	static void usingInterrupt(uint8_t n) {
-		usingInterrupt(_pinToIntnum[n]);
+		if (n < CORE_NUM_TOTAL_PINS) usingInterrupt(_pinToIntnum[n]);
 	}
 	static void usingInterrupt(IRQ_NUMBER_t interruptName);
 	static void notUsingInterrupt(IRQ_NUMBER_t interruptName);

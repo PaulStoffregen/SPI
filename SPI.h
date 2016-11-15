@@ -305,6 +305,28 @@ private:
 
 #define SPI_HAS_NOTUSINGINTERRUPT 1
 
+const IRQ_NUMBER_t _pinToIntnum[] = {
+			IRQ_PORTB, IRQ_PORTB, IRQ_PORTD, IRQ_PORTA, // 0, 1, 2, 3
+			IRQ_PORTA, IRQ_PORTD, IRQ_PORTD, IRQ_PORTD, // 4, 5, 6, 7
+			IRQ_PORTD, IRQ_PORTC, IRQ_PORTC, IRQ_PORTC, // 8, 9,10,11
+			IRQ_PORTC, IRQ_PORTC, IRQ_PORTD, IRQ_PORTC, //12,13,14,15
+			IRQ_PORTB, IRQ_PORTB, IRQ_PORTB, IRQ_PORTB, //16,17,18,19
+			IRQ_PORTD, IRQ_PORTD, IRQ_PORTC, IRQ_PORTC, //20,21,22,23
+			IRQ_PORTA, IRQ_PORTB, IRQ_PORTE, IRQ_PORTC, //24,25,26,27
+			IRQ_PORTC, IRQ_PORTC, IRQ_PORTC, IRQ_PORTE, //28,29,30,31
+			IRQ_PORTB, IRQ_PORTA						//32,33
+#if defined(__MK64FX512__) || defined(__MK66FX1M0__)
+		   ,IRQ_PORTE, IRQ_PORTE, 						//34,35
+			IRQ_PORTC, IRQ_PORTC, IRQ_PORTC, IRQ_PORTA, //36,37,38,39
+			IRQ_PORTA, IRQ_PORTA, IRQ_PORTA, IRQ_PORTB, //40,41,42,43
+			IRQ_PORTB, IRQ_PORTB, IRQ_PORTB, IRQ_PORTD, //44,45,46,47
+			IRQ_PORTD, IRQ_PORTB, IRQ_PORTB, IRQ_PORTD, //48,49,50,51
+			IRQ_PORTD, IRQ_PORTD, IRQ_PORTD, IRQ_PORTD, //52,53,54,55
+			IRQ_PORTE, IRQ_PORTE, IRQ_PORTE, IRQ_PORTE, //56,57,58,59
+			IRQ_PORTE, IRQ_PORTE, IRQ_PORTE, IRQ_PORTE  //60,61,62,63
+#endif			
+			};
+
 class SPISettings {
 public:
 	SPISettings(uint32_t clock, uint8_t bitOrder, uint8_t dataMode) {
@@ -413,19 +435,9 @@ public:
 	// prevent conflicts.  The input interruptNumber is the number used
 	// with attachInterrupt.  If SPI is used from a different interrupt
 	// (eg, a timer), interruptNumber should be 255.
+
 	static void usingInterrupt(uint8_t n) {
-		if (n == 3 || n == 4 || n == 24 || n == 33) {
-			usingInterrupt(IRQ_PORTA);
-		} else if (n == 0 || n == 1 || (n >= 16 && n <= 19) || n == 25 || n == 32) {
-			usingInterrupt(IRQ_PORTB);
-		} else if ((n >= 9 && n <= 13) || n == 15 || n == 22 || n == 23
-		  || (n >= 27 && n <= 30)) {
-			usingInterrupt(IRQ_PORTC);
-		} else if (n == 2 || (n >= 5 && n <= 8) || n == 14 || n == 20 || n == 21) {
-			usingInterrupt(IRQ_PORTD);
-		} else if (n == 26 || n == 31) {
-			usingInterrupt(IRQ_PORTE);
-		}
+		usingInterrupt(_pinToIntnum[n]);
 	}
 	static void usingInterrupt(IRQ_NUMBER_t interruptName);
 	static void notUsingInterrupt(IRQ_NUMBER_t interruptName);
@@ -615,18 +627,7 @@ public:
 	// with attachInterrupt.  If SPI is used from a different interrupt
 	// (eg, a timer), interruptNumber should be 255.
 	static void usingInterrupt(uint8_t n) {
-		if (n == 3 || n == 4 || n == 24 || n == 33) {
-			usingInterrupt(IRQ_PORTA);
-		} else if (n == 0 || n == 1 || (n >= 16 && n <= 19) || n == 25 || n == 32) {
-			usingInterrupt(IRQ_PORTB);
-		} else if ((n >= 9 && n <= 13) || n == 15 || n == 22 || n == 23
-		  || (n >= 27 && n <= 30)) {
-			usingInterrupt(IRQ_PORTC);
-		} else if (n == 2 || (n >= 5 && n <= 8) || n == 14 || n == 20 || n == 21) {
-			usingInterrupt(IRQ_PORTD);
-		} else if (n == 26 || n == 31) {
-			usingInterrupt(IRQ_PORTE);
-		}
+		usingInterrupt(_pinToIntnum[n]);
 	}
 	static void usingInterrupt(IRQ_NUMBER_t interruptName);
 	static void notUsingInterrupt(IRQ_NUMBER_t interruptName);
@@ -803,18 +804,7 @@ public:
 	// with attachInterrupt.  If SPI is used from a different interrupt
 	// (eg, a timer), interruptNumber should be 255.
 	static void usingInterrupt(uint8_t n) {
-		if (n == 3 || n == 4 || n == 24 || n == 33) {
-			usingInterrupt(IRQ_PORTA);
-		} else if (n == 0 || n == 1 || (n >= 16 && n <= 19) || n == 25 || n == 32) {
-			usingInterrupt(IRQ_PORTB);
-		} else if ((n >= 9 && n <= 13) || n == 15 || n == 22 || n == 23
-		  || (n >= 27 && n <= 30)) {
-			usingInterrupt(IRQ_PORTC);
-		} else if (n == 2 || (n >= 5 && n <= 8) || n == 14 || n == 20 || n == 21) {
-			usingInterrupt(IRQ_PORTD);
-		} else if (n == 26 || n == 31) {
-			usingInterrupt(IRQ_PORTE);
-		}
+		usingInterrupt(_pinToIntnum[n]);
 	}
 	static void usingInterrupt(IRQ_NUMBER_t interruptName);
 	static void notUsingInterrupt(IRQ_NUMBER_t interruptName);

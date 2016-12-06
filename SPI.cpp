@@ -325,6 +325,66 @@ uint8_t SPIClass::setCS(uint8_t pin)
 }
 
 
+void SPIClass::transfer(void *buf, size_t count) {
+	if (count == 0) return;
+	uint8_t *p_write = (uint8_t *)buf;
+	uint8_t *p_read = p_write;
+	size_t count_read = count;
+
+	// Lets clear the reader queue
+	SPI0_MCR = SPI_MCR_MSTR | SPI_MCR_CLR_RXF | SPI_MCR_PCSIS(0x1F);
+
+	uint32_t sr;
+
+	// Now lets loop while we still have data to output
+	if (count & 1) {
+		KINETISK_SPI0.PUSHR = *p_write++ | SPI_PUSHR_CTAS(0);
+		count--;
+	}
+
+	while (count > 0) {
+
+		// Push out the next byte; 
+	    uint16_t w = (*p_write++) << 8;
+		w |= *p_write++;
+		KINETISK_SPI0.PUSHR = w | SPI_PUSHR_CTAS(1);
+		count -= 2; // how many bytes to output.
+		// Make sure queue is not full before pushing next byte out
+		do {
+			sr = KINETISK_SPI0.SR;
+			if (sr & 0xF0)  {
+				uint16_t w = KINETISK_SPI0.POPR;  // Read any pending RX bytes in
+				if (count_read & 1) {
+					*p_read++ = w;  // Read any pending RX bytes in
+					count_read--;
+				} else {
+					*p_read++ = w >> 8;
+					*p_read++ = (w & 0xff);
+					count_read -= 2;
+				}
+			}
+		} while ((sr & (15 << 12)) > (3 << 12));
+
+	}
+
+	// now lets wait for all of the read bytes to be returned...
+	while (count_read) {
+		sr = KINETISK_SPI0.SR;
+		if (sr & 0xF0)  {
+			uint16_t w = KINETISK_SPI0.POPR;  // Read any pending RX bytes in
+			if (count_read & 1) {
+				*p_read++ = w;  // Read any pending RX bytes in
+				count_read--;
+			} else {
+				*p_read++ = w >> 8;
+				*p_read++ = (w & 0xff);
+				count_read -= 2;
+			}
+		}
+	}
+}
+
+
 
 /**********************************************************/
 /*     32 bit Teensy-3.5/3.6                              */
@@ -463,6 +523,65 @@ uint8_t SPI1Class::setCS(uint8_t pin)
 	return 0;
 }
 
+void SPI1Class::transfer(void *buf, size_t count) {
+	if (count == 0) return;
+	uint8_t *p_write = (uint8_t *)buf;
+	uint8_t *p_read = p_write;
+	size_t count_read = count;
+
+	// Lets clear the reader queue
+	SPI1_MCR = SPI_MCR_MSTR | SPI_MCR_CLR_RXF | SPI_MCR_PCSIS(0x1F);
+
+	uint32_t sr;
+
+	// Now lets loop while we still have data to output
+	if (count & 1) {
+		KINETISK_SPI1.PUSHR = *p_write++ | SPI_PUSHR_CTAS(0);
+		count--;
+	}
+
+	while (count > 0) {
+
+		// Push out the next byte; 
+	    uint16_t w = (*p_write++) << 8;
+		w |= *p_write++;
+		KINETISK_SPI1.PUSHR = w | SPI_PUSHR_CTAS(1);
+		count -= 2; // how many bytes to output.
+		// Make sure queue is not full before pushing next byte out
+		do {
+			sr = KINETISK_SPI1.SR;
+			if (sr & 0xF0)  {
+				uint16_t w = KINETISK_SPI1.POPR;  // Read any pending RX bytes in
+				if (count_read & 1) {
+					*p_read++ = w;  // Read any pending RX bytes in
+					count_read--;
+				} else {
+					*p_read++ = w >> 8;
+					*p_read++ = (w & 0xff);
+					count_read -= 2;
+				}
+			}
+		} while ((sr & (15 << 12)) > (0 << 12));	// SPI1 and 2 only have 1 item queue
+
+	}
+
+	// now lets wait for all of the read bytes to be returned...
+	while (count_read) {
+		sr = KINETISK_SPI1.SR;
+		if (sr & 0xF0)  {
+			uint16_t w = KINETISK_SPI1.POPR;  // Read any pending RX bytes in
+			if (count_read & 1) {
+				*p_read++ = w;  // Read any pending RX bytes in
+				count_read--;
+			} else {
+				*p_read++ = w >> 8;
+				*p_read++ = (w & 0xff);
+				count_read -= 2;
+			}
+		}
+	}
+}
+
 //  SPI2 Class
 SPI2Class SPI2;
 
@@ -591,6 +710,65 @@ uint8_t SPI2Class::setCS(uint8_t pin)
 	  case 55: CORE_PIN55_CONFIG = PORT_PCR_MUX(2); return 0x01; // CS0
 	}
 	return 0;
+}
+
+void SPI2Class::transfer(void *buf, size_t count) {
+	if (count == 0) return;
+	uint8_t *p_write = (uint8_t *)buf;
+	uint8_t *p_read = p_write;
+	size_t count_read = count;
+
+	// Lets clear the reader queue
+	SPI2_MCR = SPI_MCR_MSTR | SPI_MCR_CLR_RXF | SPI_MCR_PCSIS(0x1F);
+
+	uint32_t sr;
+
+	// Now lets loop while we still have data to output
+	if (count & 1) {
+		KINETISK_SPI2.PUSHR = *p_write++ | SPI_PUSHR_CTAS(0);
+		count--;
+	}
+
+	while (count > 0) {
+
+		// Push out the next byte; 
+	    uint16_t w = (*p_write++) << 8;
+		w |= *p_write++;
+		KINETISK_SPI2.PUSHR = w | SPI_PUSHR_CTAS(1);
+		count -= 2; // how many bytes to output.
+		// Make sure queue is not full before pushing next byte out
+		do {
+			sr = KINETISK_SPI2.SR;
+			if (sr & 0xF0)  {
+				uint16_t w = KINETISK_SPI2.POPR;  // Read any pending RX bytes in
+				if (count_read & 1) {
+					*p_read++ = w;  // Read any pending RX bytes in
+					count_read--;
+				} else {
+					*p_read++ = w >> 8;
+					*p_read++ = (w & 0xff);
+					count_read -= 2;
+				}
+			}
+		} while ((sr & (15 << 12)) > (0 << 12));	// SPI2 and 2 only have 1 item queue
+
+	}
+
+	// now lets wait for all of the read bytes to be returned...
+	while (count_read) {
+		sr = KINETISK_SPI2.SR;
+		if (sr & 0xF0)  {
+			uint16_t w = KINETISK_SPI2.POPR;  // Read any pending RX bytes in
+			if (count_read & 1) {
+				*p_read++ = w;  // Read any pending RX bytes in
+				count_read--;
+			} else {
+				*p_read++ = w >> 8;
+				*p_read++ = (w & 0xff);
+				count_read -= 2;
+			}
+		}
+	}
 }
 
 

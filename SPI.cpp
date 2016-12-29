@@ -347,7 +347,10 @@ void SPIClass::transfer(void *buf, size_t count) {
 		// Push out the next byte; 
 	    uint16_t w = (*p_write++) << 8;
 		w |= *p_write++;
-		KINETISK_SPI0.PUSHR = w | SPI_PUSHR_CTAS(1);
+		if (count == 2)
+			KINETISK_SPI0.PUSHR = w | SPI_PUSHR_CTAS(1);
+		else	
+			KINETISK_SPI0.PUSHR = w | SPI_PUSHR_CONT | SPI_PUSHR_CTAS(1);
 		count -= 2; // how many bytes to output.
 		// Make sure queue is not full before pushing next byte out
 		do {

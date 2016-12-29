@@ -338,7 +338,10 @@ void SPIClass::transfer(void *buf, size_t count) {
 
 	// Now lets loop while we still have data to output
 	if (count & 1) {
-		KINETISK_SPI0.PUSHR = *p_write++ | SPI_PUSHR_CTAS(0);
+		if (count > 1)
+			KINETISK_SPI0.PUSHR = *p_write++ | SPI_PUSHR_CONT | SPI_PUSHR_CTAS(0);
+		else
+			KINETISK_SPI0.PUSHR = *p_write++ | SPI_PUSHR_CTAS(0);
 		count--;
 	}
 

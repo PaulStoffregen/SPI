@@ -306,6 +306,7 @@ bool SPIClass::pinIsChipSelect(uint8_t pin1, uint8_t pin2)
 	return true;
 }
 
+// setCS() is not intended for use from normal Arduino programs/sketches.
 uint8_t SPIClass::setCS(uint8_t pin)
 {
 	switch (pin) {
@@ -453,6 +454,7 @@ bool SPI1Class::pinIsChipSelect(uint8_t pin1, uint8_t pin2)
 	return true;
 }
 
+// setCS() is not intended for use from normal Arduino programs/sketches.
 uint8_t SPI1Class::setCS(uint8_t pin)
 {
 	switch (pin) {
@@ -585,6 +587,7 @@ bool SPI2Class::pinIsChipSelect(uint8_t pin1, uint8_t pin2)
 	return true;
 }
 
+// setCS() is not intended for use from normal Arduino programs/sketches.
 uint8_t SPI2Class::setCS(uint8_t pin)
 {
 	switch (pin) {
@@ -669,6 +672,7 @@ const uint8_t SPISettings::br_clock_table[30] = {
 	SPI_BR_SPPR(5) | SPI_BR_SPR(6)
 };
 
+// setCS() is not intended for use from normal Arduino programs/sketches.
 uint8_t SPIClass::setCS(uint8_t pin)
 {
 	switch (pin) {
@@ -692,6 +696,7 @@ void SPI1Class::end() {
 	SPI1_C1 = 0;
 }
 
+// setCS() is not intended for use from normal Arduino programs/sketches.
 uint8_t SPI1Class::setCS(uint8_t pin)
 {
 	switch (pin) {

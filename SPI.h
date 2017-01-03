@@ -588,6 +588,8 @@ public:
 	// return true if both pin1 and pin2 have independent chip select capability
 	static bool pinIsChipSelect(uint8_t pin1, uint8_t pin2);
 	// configure a pin for chip select and return its SPI_MCR_PCSIS bitmask
+	// setCS() is a special function, not intended for use from normal Arduino
+	// programs/sketches.  See the ILI3941_t3 library for an example.
 	static uint8_t setCS(uint8_t pin);
 
 private:
@@ -782,6 +784,8 @@ public:
 	// return true if both pin1 and pin2 have independent chip select capability
 	static bool pinIsChipSelect(uint8_t pin1, uint8_t pin2);
 	// configure a pin for chip select and return its SPI_MCR_PCSIS bitmask
+	// setCS() is a special function, not intended for use from normal Arduino
+	// programs/sketches.  See the ILI3941_t3 library for an example.
 	static uint8_t setCS(uint8_t pin);
 
 private:
@@ -970,6 +974,8 @@ public:
 	// return true if both pin1 and pin2 have independent chip select capability
 	static bool pinIsChipSelect(uint8_t pin1, uint8_t pin2);
 	// configure a pin for chip select and return its SPI_MCR_PCSIS bitmask
+	// setCS() is a special function, not intended for use from normal Arduino
+	// programs/sketches.  See the ILI3941_t3 library for an example.
 	static uint8_t setCS(uint8_t pin);
 
 private:
@@ -1268,6 +1274,8 @@ public:
 	// return true if both pin1 and pin2 have independent chip select capability
 	static bool pinIsChipSelect(uint8_t pin1, uint8_t pin2) { return false; }
 	// configure a pin for chip select and return its SPI_MCR_PCSIS bitmask
+	// setCS() is a special function, not intended for use from normal Arduino
+	// programs/sketches.  See the ILI3941_t3 library for an example.
 	static uint8_t setCS(uint8_t pin);
 
 private:
@@ -1442,6 +1450,8 @@ public:
 	// return true if both pin1 and pin2 have independent chip select capability
 	static bool pinIsChipSelect(uint8_t pin1, uint8_t pin2) { return false; }
 	// configure a pin for chip select and return its SPI_MCR_PCSIS bitmask
+	// setCS() is a special function, not intended for use from normal Arduino
+	// programs/sketches.  See the ILI3941_t3 library for an example.
 	static uint8_t setCS(uint8_t pin);
 
 private:

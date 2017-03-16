@@ -298,7 +298,7 @@ private:
 
 
 /**********************************************************/
-/*     32 bit Teensy 3.0 and 3.1			  */
+/*     32 bit Teensy 3.0 and 3.1, 3.2, 3.5, 3.6			  */
 /**********************************************************/
 
 #elif defined(__arm__) && defined(TEENSYDUINO) && defined(KINETISK)
@@ -488,21 +488,7 @@ public:
 		while (!(SPI0_SR & SPI_SR_TCF)) ; // wait
 		return SPI0_POPR;
 	}
-	inline static void transfer(void *buf, size_t count) {
-		if (count == 0) return;
-		uint8_t *p = (uint8_t *)buf;
-		SPDR = *p;
-		while (--count > 0) {
-			uint8_t out = *(p + 1);
-			while (!(SPSR & _BV(SPIF))) ;
-			uint8_t in = SPDR;
-			SPDR = out;
-			*p++ = in;
-		}
-		while (!(SPSR & _BV(SPIF))) ;
-		*p = SPDR;
-	}
-
+	static void transfer(void *buf, size_t count);
 	// After performing a group of transfers and releasing the chip select
 	// signal, this function allows others to access the SPI bus
 	inline static void endTransaction(void) {
@@ -691,14 +677,7 @@ public:
 		while (!(SPI1_SR & SPI_SR_TCF)) ; // wait
 		return SPI1_POPR;
 	}
-	inline static void transfer(void *buf, size_t count) {
-		uint8_t *p = (uint8_t *)buf;
-		while (count--) {
-			*p = transfer(*p);
-			p++;
-		}
-	}
-
+	static void transfer(void *buf, size_t count);
 	// After performing a group of transfers and releasing the chip select
 	// signal, this function allows others to access the SPI bus
 	inline static void endTransaction(void) {
@@ -881,13 +860,7 @@ public:
 		while (!(SPI2_SR & SPI_SR_TCF)) ; // wait
 		return SPI2_POPR;
 	}
-	inline static void transfer(void *buf, size_t count) {
-		uint8_t *p = (uint8_t *)buf;
-		while (count--) {
-			*p = transfer(*p);
-			p++;
-		}
-	}
+	static void transfer(void *buf, size_t count);
 
 	// After performing a group of transfers and releasing the chip select
 	// signal, this function allows others to access the SPI bus

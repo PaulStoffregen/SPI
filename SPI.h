@@ -473,6 +473,7 @@ public:
 			SPI0_CTAR1 = settings.ctar| SPI_CTAR_FMSZ(8);
 			SPI0_MCR = SPI_MCR_MSTR | SPI_MCR_PCSIS(0x1F);
 		}
+		SPI0_MCR |= SPI_MCR_CLR_TXF | SPI_MCR_CLR_RXF;
 	}
 
 	// Write to the SPI bus (MOSI pin) and also receive (MISO pin)

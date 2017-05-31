@@ -328,11 +328,13 @@ uint8_t SPIClass::setCS(uint8_t pin)
 }
 
 
-void SPIClass::transfer(void *buf, size_t count) {
+void SPIClass::transfer(void *buf, size_t count)
+{
 	if (count == 0) return;
 	uint8_t *p_write = (uint8_t *)buf;
 	uint8_t *p_read = p_write;
 	size_t count_read = count;
+	bool lsbfirst = (SPI0_CTAR0 & SPI_CTAR_LSBFE) ? true : false;
 
 	// Lets clear the reader queue
 	SPI0_MCR = SPI_MCR_MSTR | SPI_MCR_CLR_RXF | SPI_MCR_PCSIS(0x1F);
@@ -349,10 +351,10 @@ void SPIClass::transfer(void *buf, size_t count) {
 	}
 
 	while (count > 0) {
-
 		// Push out the next byte; 
-	    uint16_t w = (*p_write++) << 8;
+		uint16_t w = (*p_write++) << 8;
 		w |= *p_write++;
+		if (lsbfirst) w = __builtin_bswap16(w);
 		if (count == 2)
 			KINETISK_SPI0.PUSHR = w | SPI_PUSHR_CTAS(1);
 		else	
@@ -367,13 +369,13 @@ void SPIClass::transfer(void *buf, size_t count) {
 					*p_read++ = w;  // Read any pending RX bytes in
 					count_read--;
 				} else {
+					if (lsbfirst) w = __builtin_bswap16(w);
 					*p_read++ = w >> 8;
 					*p_read++ = (w & 0xff);
 					count_read -= 2;
 				}
 			}
 		} while ((sr & (15 << 12)) > (3 << 12));
-
 	}
 
 	// now lets wait for all of the read bytes to be returned...
@@ -385,6 +387,7 @@ void SPIClass::transfer(void *buf, size_t count) {
 				*p_read++ = w;  // Read any pending RX bytes in
 				count_read--;
 			} else {
+				if (lsbfirst) w = __builtin_bswap16(w);
 				*p_read++ = w >> 8;
 				*p_read++ = (w & 0xff);
 				count_read -= 2;
@@ -533,11 +536,13 @@ uint8_t SPI1Class::setCS(uint8_t pin)
 	return 0;
 }
 
-void SPI1Class::transfer(void *buf, size_t count) {
+void SPI1Class::transfer(void *buf, size_t count)
+{
 	if (count == 0) return;
 	uint8_t *p_write = (uint8_t *)buf;
 	uint8_t *p_read = p_write;
 	size_t count_read = count;
+	bool lsbfirst = (SPI1_CTAR0 & SPI_CTAR_LSBFE) ? true : false;
 
 	// Lets clear the reader queue
 	SPI1_MCR = SPI_MCR_MSTR | SPI_MCR_CLR_RXF | SPI_MCR_PCSIS(0x1F);
@@ -551,10 +556,10 @@ void SPI1Class::transfer(void *buf, size_t count) {
 	}
 
 	while (count > 0) {
-
 		// Push out the next byte; 
-	    uint16_t w = (*p_write++) << 8;
+		uint16_t w = (*p_write++) << 8;
 		w |= *p_write++;
+		if (lsbfirst) w = __builtin_bswap16(w);
 		KINETISK_SPI1.PUSHR = w | SPI_PUSHR_CTAS(1);
 		count -= 2; // how many bytes to output.
 		// Make sure queue is not full before pushing next byte out
@@ -566,13 +571,13 @@ void SPI1Class::transfer(void *buf, size_t count) {
 					*p_read++ = w;  // Read any pending RX bytes in
 					count_read--;
 				} else {
+					if (lsbfirst) w = __builtin_bswap16(w);
 					*p_read++ = w >> 8;
 					*p_read++ = (w & 0xff);
 					count_read -= 2;
 				}
 			}
 		} while ((sr & (15 << 12)) > (0 << 12));	// SPI1 and 2 only have 1 item queue
-
 	}
 
 	// now lets wait for all of the read bytes to be returned...
@@ -584,6 +589,7 @@ void SPI1Class::transfer(void *buf, size_t count) {
 				*p_read++ = w;  // Read any pending RX bytes in
 				count_read--;
 			} else {
+				if (lsbfirst) w = __builtin_bswap16(w);
 				*p_read++ = w >> 8;
 				*p_read++ = (w & 0xff);
 				count_read -= 2;
@@ -723,11 +729,13 @@ uint8_t SPI2Class::setCS(uint8_t pin)
 	return 0;
 }
 
-void SPI2Class::transfer(void *buf, size_t count) {
+void SPI2Class::transfer(void *buf, size_t count)
+{
 	if (count == 0) return;
 	uint8_t *p_write = (uint8_t *)buf;
 	uint8_t *p_read = p_write;
 	size_t count_read = count;
+	bool lsbfirst = (SPI2_CTAR0 & SPI_CTAR_LSBFE) ? true : false;
 
 	// Lets clear the reader queue
 	SPI2_MCR = SPI_MCR_MSTR | SPI_MCR_CLR_RXF | SPI_MCR_PCSIS(0x1F);
@@ -741,10 +749,10 @@ void SPI2Class::transfer(void *buf, size_t count) {
 	}
 
 	while (count > 0) {
-
 		// Push out the next byte; 
-	    uint16_t w = (*p_write++) << 8;
+		uint16_t w = (*p_write++) << 8;
 		w |= *p_write++;
+		if (lsbfirst) w = __builtin_bswap16(w);
 		KINETISK_SPI2.PUSHR = w | SPI_PUSHR_CTAS(1);
 		count -= 2; // how many bytes to output.
 		// Make sure queue is not full before pushing next byte out
@@ -756,13 +764,13 @@ void SPI2Class::transfer(void *buf, size_t count) {
 					*p_read++ = w;  // Read any pending RX bytes in
 					count_read--;
 				} else {
+					if (lsbfirst) w = __builtin_bswap16(w);
 					*p_read++ = w >> 8;
 					*p_read++ = (w & 0xff);
 					count_read -= 2;
 				}
 			}
 		} while ((sr & (15 << 12)) > (0 << 12));	// SPI2 and 2 only have 1 item queue
-
 	}
 
 	// now lets wait for all of the read bytes to be returned...
@@ -774,6 +782,7 @@ void SPI2Class::transfer(void *buf, size_t count) {
 				*p_read++ = w;  // Read any pending RX bytes in
 				count_read--;
 			} else {
+				if (lsbfirst) w = __builtin_bswap16(w);
 				*p_read++ = w >> 8;
 				*p_read++ = (w & 0xff);
 				count_read -= 2;

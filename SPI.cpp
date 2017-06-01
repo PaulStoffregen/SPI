@@ -140,34 +140,122 @@ void SPIClass::usingInterrupt(uint8_t interruptNumber)
 
 
 /**********************************************************/
-/*     32 bit Teensy 3.0 and 3.1			  */
+/*     32 bit Teensy 3.x				  */
 /**********************************************************/
 
 #elif defined(__arm__) && defined(TEENSYDUINO) && defined(KINETISK)
 
 
-SPIClass SPI;
+#if defined(__MK20DX128__) || defined(__MK20DX256__)
+void _spi_dma_rxISR0(void) {/*SPI.dma_rxisr();*/}
+const SPIClass::SPI_Hardware_t SPIClass::spi0_hardware = {
+	SIM_SCGC6, SIM_SCGC6_SPI0, 4, IRQ_SPI0,
+	32767, DMAMUX_SOURCE_SPI0_TX, DMAMUX_SOURCE_SPI0_RX,
+	_spi_dma_rxISR0,
+	12, 8,
+	2, 2,
+	11, 7,
+	2, 2,
+	13, 14,
+	2, 2,
+	10, 2, 9, 6, 20, 23, 21, 22, 15,
+	2,  2, 2,  2,  2,  2,  2,  2,  2,
+	0x1, 0x1, 0x2, 0x2, 0x4, 0x4, 0x8, 0x8, 0x10
+};
+SPIClass SPI((uintptr_t)&KINETISK_SPI0, (uintptr_t)&SPIClass::spi0_hardware);
 
-uint8_t SPIClass::interruptMasksUsed = 0;
-uint32_t SPIClass::interruptMask[(NVIC_NUM_INTERRUPTS+31)/32];
-uint32_t SPIClass::interruptSave[(NVIC_NUM_INTERRUPTS+31)/32];
-#ifdef SPI_TRANSACTION_MISMATCH_LED
-uint8_t SPIClass::inTransactionFlag = 0;
+#elif defined(__MK64FX512__) || defined(__MK66FX1M0__)
+void _spi_dma_rxISR0(void) {/*SPI.dma_rxisr();*/}
+void _spi_dma_rxISR1(void) {/*SPI1.dma_rxisr();*/}
+void _spi_dma_rxISR2(void) {/*SPI2.dma_rxisr();*/}
+const SPIClass::SPI_Hardware_t SPIClass::spi0_hardware = {
+	SIM_SCGC6, SIM_SCGC6_SPI0, 4, IRQ_SPI0,
+	32767, DMAMUX_SOURCE_SPI0_TX, DMAMUX_SOURCE_SPI0_RX,
+	_spi_dma_rxISR0,
+	12, 8, 39, 255,
+	2, 2, 2, 0,
+	11, 7, 28, 255,
+	2, 2, 2, 0,
+	13, 14, 27,
+	2, 2, 2,
+	10, 2, 9, 6, 20, 23, 21, 22, 15, 26, 45,
+	2,  2, 2,  2,  2,  2,  2,  2,  2,   2,   3,
+	0x1, 0x1, 0x2, 0x2, 0x4, 0x4, 0x8, 0x8, 0x10, 0x1, 0x20
+};
+const SPIClass::SPI_Hardware_t SPIClass::spi1_hardware = {
+	SIM_SCGC6, SIM_SCGC6_SPI1, 1, IRQ_SPI1,
+	#if defined(__MK66FX1M0__)
+	32767, DMAMUX_SOURCE_SPI1_TX, DMAMUX_SOURCE_SPI1_RX,
+	#else
+	// T3.5 does not have good DMA support on 1 and 2
+	511, 0, DMAMUX_SOURCE_SPI1,
+	#endif
+	_spi_dma_rxISR1,
+	1, 5, 61, 59,
+	2, 7, 2, 7,
+	0, 21, 61, 59,
+	2, 7, 7, 2,
+	32, 20, 60,
+	2, 7, 2,
+	6, 31, 58, 62, 63, 255, 255, 255, 255, 255, 255,
+	7,  2,  2,  2,  2,  0,  0,  0,  0,   0,   0,
+	0x1, 0x1, 0x2, 0x1, 0x4, 0, 0, 0, 0, 0, 0
+};
+const SPIClass::SPI_Hardware_t SPIClass::spi2_hardware = {
+	SIM_SCGC3, SIM_SCGC3_SPI2, 1, IRQ_SPI2,
+	#if defined(__MK66FX1M0__)
+	32767, DMAMUX_SOURCE_SPI2_TX, DMAMUX_SOURCE_SPI2_RX,
+	#else
+	// T3.5 does not have good DMA support on 1 and 2
+	511, 0, DMAMUX_SOURCE_SPI2,
+	#endif
+	_spi_dma_rxISR2,
+	45, 51, 255, 255,
+	2, 2, 0, 0,
+	44, 52, 255, 255,
+	2, 2, 0, 0,
+	46, 53, 255,
+	2, 2, 0,
+	43, 54, 55, 255, 255, 255, 255, 255, 255, 255, 255,
+	2,  2,  2,  0,  0,  0,  0,  0,  0,   0,   0,
+	0x1, 0x2, 0x1, 0, 0, 0, 0, 0, 0, 0, 0
+};
+//SPIClass SPI((uintptr_t)&KINETISK_SPI0, SPIClass::spi0_hardware);
+SPIClass SPI((uintptr_t)&KINETISK_SPI0, (uintptr_t)&SPIClass::spi0_hardware);
+//SPIClass SPI1((uintptr_t)&KINETISK_SPI1, SPIClass::spi1_hardware);
+//SPIClass SPI2((uintptr_t)&KINETISK_SPI2, SPIClass::spi2_hardware);
 #endif
+
 
 void SPIClass::begin()
 {
-	SIM_SCGC6 |= SIM_SCGC6_SPI0;
-	SPI0_MCR = SPI_MCR_MDIS | SPI_MCR_HALT | SPI_MCR_PCSIS(0x1F);
-	SPI0_CTAR0 = SPI_CTAR_FMSZ(7) | SPI_CTAR_PBR(0) | SPI_CTAR_BR(1) | SPI_CTAR_CSSCK(1);
-	SPI0_CTAR1 = SPI_CTAR_FMSZ(15) | SPI_CTAR_PBR(0) | SPI_CTAR_BR(1) | SPI_CTAR_CSSCK(1);
-	SPI0_MCR = SPI_MCR_MSTR | SPI_MCR_PCSIS(0x1F);
-	SPCR.enable_pins(); // pins managed by SPCRemulation in avr_emulation.h
+	volatile uint32_t *reg;
+
+	hardware().clock_gate_register |= hardware().clock_gate_mask;
+	port().MCR = SPI_MCR_MDIS | SPI_MCR_HALT | SPI_MCR_PCSIS(0x1F);
+	port().CTAR0 = SPI_CTAR_FMSZ(7) | SPI_CTAR_PBR(0) | SPI_CTAR_BR(1) | SPI_CTAR_CSSCK(1);
+	port().CTAR1 = SPI_CTAR_FMSZ(15) | SPI_CTAR_PBR(0) | SPI_CTAR_BR(1) | SPI_CTAR_CSSCK(1);
+	port().MCR = SPI_MCR_MSTR | SPI_MCR_PCSIS(0x1F);
+	reg = portConfigRegister(hardware().mosi_pin[mosi_pin_index]);
+	*reg = PORT_PCR_MUX(hardware().mosi_mux[mosi_pin_index]);
+	reg = portConfigRegister(hardware().miso_pin[miso_pin_index]);
+	*reg= PORT_PCR_MUX(hardware().miso_mux[miso_pin_index]);
+	reg = portConfigRegister(hardware().sck_pin[sck_pin_index]);
+	*reg = PORT_PCR_MUX(hardware().sck_mux[sck_pin_index]);
 }
 
-void SPIClass::end() {
-	SPCR.disable_pins();
-	SPI0_MCR = SPI_MCR_MDIS | SPI_MCR_HALT | SPI_MCR_PCSIS(0x1F);
+void SPIClass::end()
+{
+	volatile uint32_t *reg;
+
+	//SPCR.disable_pins();
+	reg = portConfigRegister(hardware().mosi_pin[mosi_pin_index]);
+	*reg = 0;
+	reg = portConfigRegister(hardware().miso_pin[miso_pin_index]);
+	*reg = 0;
+	reg = portConfigRegister(hardware().sck_pin[sck_pin_index]);
+	*reg = 0;
+	port().MCR = SPI_MCR_MDIS | SPI_MCR_HALT | SPI_MCR_PCSIS(0x1F);
 }
 
 void SPIClass::usingInterrupt(IRQ_NUMBER_t interruptName)
@@ -226,26 +314,26 @@ const uint32_t SPISettings::ctar_clock_table[23] = {
 	SPI_CTAR_PBR(1) | SPI_CTAR_BR(8) | SPI_CTAR_CSSCK(7)
 };
 
-static void updateCTAR(uint32_t ctar)
+void SPIClass::updateCTAR(uint32_t ctar)
 {
-	if (SPI0_CTAR0 != ctar) {
-		uint32_t mcr = SPI0_MCR;
+	if (port().CTAR0 != ctar) {
+		uint32_t mcr = port().MCR;
 		if (mcr & SPI_MCR_MDIS) {
-			SPI0_CTAR0 = ctar;
-			SPI0_CTAR1 = ctar | SPI_CTAR_FMSZ(8);
+			port().CTAR0 = ctar;
+			port().CTAR1 = ctar | SPI_CTAR_FMSZ(8);
 		} else {
-			SPI0_MCR = SPI_MCR_MDIS | SPI_MCR_HALT | SPI_MCR_PCSIS(0x1F);
-			SPI0_CTAR0 = ctar;
-			SPI0_CTAR1 = ctar | SPI_CTAR_FMSZ(8);
-			SPI0_MCR = mcr;
+			port().MCR = SPI_MCR_MDIS | SPI_MCR_HALT | SPI_MCR_PCSIS(0x1F);
+			port().CTAR0 = ctar;
+			port().CTAR1 = ctar | SPI_CTAR_FMSZ(8);
+			port().MCR = mcr;
 		}
 	}
 }
 
 void SPIClass::setBitOrder(uint8_t bitOrder)
 {
-	SIM_SCGC6 |= SIM_SCGC6_SPI0;
-	uint32_t ctar = SPI0_CTAR0;
+	hardware().clock_gate_register |= hardware().clock_gate_mask;
+	uint32_t ctar = port().CTAR0;
 	if (bitOrder == LSBFIRST) {
 		ctar |= SPI_CTAR_LSBFE;
 	} else {
@@ -256,17 +344,17 @@ void SPIClass::setBitOrder(uint8_t bitOrder)
 
 void SPIClass::setDataMode(uint8_t dataMode)
 {
-	SIM_SCGC6 |= SIM_SCGC6_SPI0;
+	hardware().clock_gate_register |= hardware().clock_gate_mask;
+	//uint32_t ctar = port().CTAR0;
 
 	// TODO: implement with native code
-
-	SPCR = (SPCR & ~SPI_MODE_MASK) | dataMode;
+	//SPCR = (SPCR & ~SPI_MODE_MASK) | dataMode;
 }
 
 void SPIClass::setClockDivider_noInline(uint32_t clk)
 {
-	SIM_SCGC6 |= SIM_SCGC6_SPI0;
-	uint32_t ctar = SPI0_CTAR0;
+	hardware().clock_gate_register |= hardware().clock_gate_mask;
+	uint32_t ctar = port().CTAR0;
 	ctar &= (SPI_CTAR_CPOL | SPI_CTAR_CPHA | SPI_CTAR_LSBFE);
 	if (ctar & SPI_CTAR_CPHA) {
 		clk = (clk & 0xFFFF0FFF) | ((clk & 0xF000) >> 4);
@@ -277,6 +365,11 @@ void SPIClass::setClockDivider_noInline(uint32_t clk)
 
 uint8_t SPIClass::pinIsChipSelect(uint8_t pin)
 {
+	for (unsigned int i = 0; i < sizeof(hardware().cs_pin); i++) {
+		if (pin == hardware().cs_pin[i]) return hardware().cs_mask[i];
+	}
+	return 0;
+/*
 	switch (pin) {
 	  case 10: return 0x01; // PTC4
 	  case 2:  return 0x01; // PTD0
@@ -292,8 +385,8 @@ uint8_t SPIClass::pinIsChipSelect(uint8_t pin)
 	  case 45: return 0x20; // CS5
 #endif
 	}
-
     return 0;
+*/
 }
 
 bool SPIClass::pinIsChipSelect(uint8_t pin1, uint8_t pin2)
@@ -309,6 +402,15 @@ bool SPIClass::pinIsChipSelect(uint8_t pin1, uint8_t pin2)
 // setCS() is not intended for use from normal Arduino programs/sketches.
 uint8_t SPIClass::setCS(uint8_t pin)
 {
+	for (unsigned int i = 0; i < sizeof(hardware().cs_pin); i++) {
+		if (pin == hardware().cs_pin[i]) {
+			volatile uint32_t *reg = portConfigRegister(pin);
+			*reg = PORT_PCR_MUX(hardware().cs_mux[i]);
+			return hardware().cs_mask[i];
+		}
+	}
+	return 0;
+/*
 	switch (pin) {
 	  case 10: CORE_PIN10_CONFIG = PORT_PCR_MUX(2); return 0x01; // PTC4
 	  case 2:  CORE_PIN2_CONFIG  = PORT_PCR_MUX(2); return 0x01; // PTD0
@@ -325,8 +427,44 @@ uint8_t SPIClass::setCS(uint8_t pin)
 #endif
 	}
 	return 0;
+*/
 }
 
+void SPIClass::setMOSI(uint8_t pin)
+{
+	if (pin != hardware().mosi_pin[mosi_pin_index]) {
+		for (unsigned int i = 0; i < sizeof(hardware().mosi_pin); i++) {
+			if  (pin == hardware().mosi_pin[i]) {
+				mosi_pin_index = i;
+				return;
+			}
+		}
+	}
+}
+
+void SPIClass::setMISO(uint8_t pin)
+{
+	if (pin != hardware().miso_pin[miso_pin_index]) {
+		for (unsigned int i = 0; i < sizeof(hardware().miso_pin); i++) {
+			if  (pin == hardware().miso_pin[i]) {
+				miso_pin_index = i;
+				return;
+			}
+		}
+	}
+}
+
+void SPIClass::setSCK(uint8_t pin)
+{
+	if (pin != hardware().sck_pin[sck_pin_index]) {
+		for (unsigned int i = 0; i < sizeof(hardware().sck_pin); i++) {
+			if  (pin == hardware().sck_pin[i]) {
+				sck_pin_index = i;
+				return;
+			}
+		}
+	}
+}
 
 void SPIClass::transfer(void *buf, size_t count)
 {
@@ -334,19 +472,19 @@ void SPIClass::transfer(void *buf, size_t count)
 	uint8_t *p_write = (uint8_t *)buf;
 	uint8_t *p_read = p_write;
 	size_t count_read = count;
-	bool lsbfirst = (SPI0_CTAR0 & SPI_CTAR_LSBFE) ? true : false;
+	bool lsbfirst = (port().CTAR0 & SPI_CTAR_LSBFE) ? true : false;
 
 	// Lets clear the reader queue
-	SPI0_MCR = SPI_MCR_MSTR | SPI_MCR_CLR_RXF | SPI_MCR_PCSIS(0x1F);
+	port().MCR = SPI_MCR_MSTR | SPI_MCR_CLR_RXF | SPI_MCR_PCSIS(0x1F);
 
 	uint32_t sr;
 
 	// Now lets loop while we still have data to output
 	if (count & 1) {
 		if (count > 1)
-			KINETISK_SPI0.PUSHR = *p_write++ | SPI_PUSHR_CONT | SPI_PUSHR_CTAS(0);
+			port().PUSHR = *p_write++ | SPI_PUSHR_CONT | SPI_PUSHR_CTAS(0);
 		else
-			KINETISK_SPI0.PUSHR = *p_write++ | SPI_PUSHR_CTAS(0);
+			port().PUSHR = *p_write++ | SPI_PUSHR_CTAS(0);
 		count--;
 	}
 
@@ -356,15 +494,15 @@ void SPIClass::transfer(void *buf, size_t count)
 		w |= *p_write++;
 		if (lsbfirst) w = __builtin_bswap16(w);
 		if (count == 2)
-			KINETISK_SPI0.PUSHR = w | SPI_PUSHR_CTAS(1);
+			port().PUSHR = w | SPI_PUSHR_CTAS(1);
 		else	
-			KINETISK_SPI0.PUSHR = w | SPI_PUSHR_CONT | SPI_PUSHR_CTAS(1);
+			port().PUSHR = w | SPI_PUSHR_CONT | SPI_PUSHR_CTAS(1);
 		count -= 2; // how many bytes to output.
 		// Make sure queue is not full before pushing next byte out
 		do {
-			sr = KINETISK_SPI0.SR;
+			sr = port().SR;
 			if (sr & 0xF0)  {
-				uint16_t w = KINETISK_SPI0.POPR;  // Read any pending RX bytes in
+				uint16_t w = port().POPR;  // Read any pending RX bytes in
 				if (count_read & 1) {
 					*p_read++ = w;  // Read any pending RX bytes in
 					count_read--;
@@ -380,9 +518,9 @@ void SPIClass::transfer(void *buf, size_t count)
 
 	// now lets wait for all of the read bytes to be returned...
 	while (count_read) {
-		sr = KINETISK_SPI0.SR;
+		sr = port().SR;
 		if (sr & 0xF0)  {
-			uint16_t w = KINETISK_SPI0.POPR;  // Read any pending RX bytes in
+			uint16_t w = port().POPR;  // Read any pending RX bytes in
 			if (count_read & 1) {
 				*p_read++ = w;  // Read any pending RX bytes in
 				count_read--;

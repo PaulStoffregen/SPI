@@ -451,7 +451,7 @@ void SPIClass::transfer(void *buf, size_t count)
 
 	full_mask = (hardware().queue_size-1) << 12;
 	while (count > 0) {
-		// Push out the next byte; 
+		// Push out the next byte
 		uint16_t w = (*p_write++) << 8;
 		w |= *p_write++;
 		if (lsbfirst) w = __builtin_bswap16(w);
@@ -503,30 +503,67 @@ void SPIClass::transfer(void *buf, size_t count)
 
 #elif defined(__arm__) && defined(TEENSYDUINO) && defined(KINETISL)
 
-SPIClass SPI;
-SPI1Class SPI1;
+void _spi_dma_rxISR0(void) {/*SPI.dma_rxisr();*/}
+const SPIClass::SPI_Hardware_t SPIClass::spi0_hardware = {
+	SIM_SCGC4, SIM_SCGC4_SPI0,
+	0, // BR index 0
+	DMAMUX_SOURCE_SPI0_TX, DMAMUX_SOURCE_SPI0_RX, _spi_dma_rxISR0,
+	12, 8,
+	2, 2,
+	11, 7,
+	2, 2,
+	13, 14,
+	2, 2,
+	10, 2,
+	2,  2,
+	0x1, 0x1
+};
+SPIClass SPI((uintptr_t)&KINETISL_SPI0, (uintptr_t)&SPIClass::spi0_hardware);
 
-uint32_t SPIClass::interruptMask = 0;
-uint32_t SPIClass::interruptSave = 0;
-uint32_t SPI1Class::interruptMask = 0;
-uint32_t SPI1Class::interruptSave = 0;
-#ifdef SPI_TRANSACTION_MISMATCH_LED
-uint8_t SPIClass::inTransactionFlag = 0;
-uint8_t SPI1Class::inTransactionFlag = 0;
-#endif
+void _spi_dma_rxISR1(void) {/*SPI1.dma_rxisr();*/}
+const SPIClass::SPI_Hardware_t SPIClass::spi1_hardware = {
+	SIM_SCGC4, SIM_SCGC4_SPI1,
+	1, // BR index 1 in SPI Settings
+	DMAMUX_SOURCE_SPI1_TX, DMAMUX_SOURCE_SPI1_RX, _spi_dma_rxISR1,
+	1, 5,
+	2, 2,
+	0, 21,
+	2, 2,
+	20, 255,
+	2, 0,
+	6, 255,
+	2,  0,
+	0x1, 0
+};
+SPIClass SPI1((uintptr_t)&KINETISL_SPI1, (uintptr_t)&SPIClass::spi1_hardware);
+
 
 void SPIClass::begin()
 {
-	SIM_SCGC4 |= SIM_SCGC4_SPI0;
-	SPI0_C1 = SPI_C1_SPE | SPI_C1_MSTR;
-	SPI0_C2 = 0;
-	uint8_t tmp __attribute__((unused)) = SPI0_S;
-	SPCR.enable_pins(); // pins managed by SPCRemulation in avr_emulation.h
+	volatile uint32_t *reg;
+
+	hardware().clock_gate_register |= hardware().clock_gate_mask;
+	port().C1 = SPI_C1_SPE | SPI_C1_MSTR;
+	port().C2 = 0;
+	uint8_t tmp __attribute__((unused)) = port().S;
+	reg = portConfigRegister(hardware().mosi_pin[mosi_pin_index]);
+	*reg = PORT_PCR_MUX(hardware().mosi_mux[mosi_pin_index]);
+	reg = portConfigRegister(hardware().miso_pin[miso_pin_index]);
+	*reg = PORT_PCR_MUX(hardware().miso_mux[miso_pin_index]);
+	reg = portConfigRegister(hardware().sck_pin[sck_pin_index]);
+	*reg = PORT_PCR_MUX(hardware().sck_mux[sck_pin_index]);
 }
 
 void SPIClass::end() {
-	SPCR.disable_pins();
-	SPI0_C1 = 0;
+	volatile uint32_t *reg;
+
+	reg = portConfigRegister(hardware().mosi_pin[mosi_pin_index]);
+	*reg = 0;
+	reg = portConfigRegister(hardware().miso_pin[miso_pin_index]);
+	*reg = 0;
+	reg = portConfigRegister(hardware().sck_pin[sck_pin_index]);
+	*reg = 0;
+	port().C1 = 0;
 }
 
 const uint16_t SPISettings::br_div_table[30] = {
@@ -568,43 +605,65 @@ const uint8_t SPISettings::br_clock_table[30] = {
 	SPI_BR_SPPR(5) | SPI_BR_SPR(6)
 };
 
+void SPIClass::setMOSI(uint8_t pin)
+{
+	if (pin != hardware().mosi_pin[mosi_pin_index]) {
+		for (unsigned int i = 0; i < sizeof(hardware().mosi_pin); i++) {
+			if (pin == hardware().mosi_pin[i] ) {
+				mosi_pin_index = i;
+				return;
+			}
+		}
+	}
+}
+
+void SPIClass::setMISO(uint8_t pin)
+{
+	if (pin != hardware().miso_pin[miso_pin_index]) {
+		for (unsigned int i = 0; i < sizeof(hardware().miso_pin); i++) {
+			if (pin == hardware().miso_pin[i] ) {
+				miso_pin_index = i;
+				return;
+			}
+		}
+	}
+}
+
+void SPIClass::setSCK(uint8_t pin)
+{
+	if (pin != hardware().sck_pin[sck_pin_index]) {
+		for (unsigned int i = 0; i < sizeof(hardware().sck_pin); i++) {
+			if (pin == hardware().sck_pin[i] ) {
+				sck_pin_index = i;
+				return;
+			}
+		}
+	}
+}
+
+bool SPIClass::pinIsChipSelect(uint8_t pin)
+{
+	for (unsigned int i = 0; i < sizeof(hardware().cs_pin); i++) {
+		if (pin == hardware().cs_pin[i]) return hardware().cs_mask[i];
+	}
+	return 0;
+}
+
 // setCS() is not intended for use from normal Arduino programs/sketches.
 uint8_t SPIClass::setCS(uint8_t pin)
 {
-	switch (pin) {
-	  case 10: CORE_PIN10_CONFIG = PORT_PCR_MUX(2); return 0x01; // PTC4
-	  case 2:  CORE_PIN2_CONFIG  = PORT_PCR_MUX(2); return 0x01; // PTD0
+	for (unsigned int i = 0; i < sizeof(hardware().cs_pin); i++) {
+		if  (pin == hardware().cs_pin[i]) {
+			volatile uint32_t *reg = portConfigRegister(pin);
+			*reg = PORT_PCR_MUX(hardware().cs_mux[i]);
+			return hardware().cs_mask[i];
+		}
 	}
 	return 0;
 }
-
-void SPI1Class::begin()
-{
-	SIM_SCGC4 |= SIM_SCGC4_SPI1;
-	SPI1_C1 = SPI_C1_SPE | SPI_C1_MSTR;
-	SPI1_C2 = 0;
-	uint8_t tmp __attribute__((unused)) = SPI1_S;
-	SPCR1.enable_pins(); // pins managed by SPCRemulation in avr_emulation.h
-}
-
-void SPI1Class::end() {
-	SPCR1.disable_pins();
-	SPI1_C1 = 0;
-}
-
-// setCS() is not intended for use from normal Arduino programs/sketches.
-uint8_t SPI1Class::setCS(uint8_t pin)
-{
-	switch (pin) {
-	  case 6:  CORE_PIN6_CONFIG = PORT_PCR_MUX(2); return 0x01; // PTD4
-	}
-	return 0;
-}
-
 
 
 
 
 #endif
-
 

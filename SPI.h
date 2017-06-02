@@ -597,6 +597,9 @@ public:
 
 	// return true if "pin" has special chip select capability
 	uint8_t pinIsChipSelect(uint8_t pin);
+	bool pinIsMOSI(uint8_t pin);
+	bool pinIsMISO(uint8_t pin);
+	bool pinIsSCK(uint8_t pin);
 	// return true if both pin1 and pin2 have independent chip select capability
 	bool pinIsChipSelect(uint8_t pin1, uint8_t pin2);
 	// configure a pin for chip select and return its SPI_MCR_PCSIS bitmask
@@ -919,6 +922,9 @@ public:
 	void setSCK(uint8_t pin);
 	// return true if "pin" has special chip select capability
 	bool pinIsChipSelect(uint8_t pin);
+	bool pinIsMOSI(uint8_t pin);
+	bool pinIsMISO(uint8_t pin);
+	bool pinIsSCK(uint8_t pin);
 	// return true if both pin1 and pin2 have independent chip select capability
 	bool pinIsChipSelect(uint8_t pin1, uint8_t pin2) { return false; }
 	// configure a pin for chip select and return its SPI_MCR_PCSIS bitmask

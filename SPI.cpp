@@ -379,6 +379,30 @@ bool SPIClass::pinIsChipSelect(uint8_t pin1, uint8_t pin2)
 	return true;
 }
 
+bool SPIClass::pinIsMOSI(uint8_t pin)
+{
+	for (unsigned int i = 0; i < sizeof(hardware().mosi_pin); i++) {
+		if (pin == hardware().mosi_pin[i]) return true;
+	}
+	return false;
+}
+
+bool SPIClass::pinIsMISO(uint8_t pin)
+{
+	for (unsigned int i = 0; i < sizeof(hardware().miso_pin); i++) {
+		if (pin == hardware().miso_pin[i]) return true;
+	}
+	return false;
+}
+
+bool SPIClass::pinIsSCK(uint8_t pin)
+{
+	for (unsigned int i = 0; i < sizeof(hardware().sck_pin); i++) {
+		if (pin == hardware().sck_pin[i]) return true;
+	}
+	return false;
+}
+
 // setCS() is not intended for use from normal Arduino programs/sketches.
 uint8_t SPIClass::setCS(uint8_t pin)
 {
@@ -647,6 +671,30 @@ bool SPIClass::pinIsChipSelect(uint8_t pin)
 		if (pin == hardware().cs_pin[i]) return hardware().cs_mask[i];
 	}
 	return 0;
+}
+
+bool SPIClass::pinIsMOSI(uint8_t pin)
+{
+	for (unsigned int i = 0; i < sizeof(hardware().mosi_pin); i++) {
+		if (pin == hardware().mosi_pin[i]) return true;
+	}
+	return false;
+}
+
+bool SPIClass::pinIsMISO(uint8_t pin)
+{
+	for (unsigned int i = 0; i < sizeof(hardware().miso_pin); i++) {
+		if (pin == hardware().miso_pin[i]) return true;
+	}
+	return false;
+}
+
+bool SPIClass::pinIsSCK(uint8_t pin)
+{
+	for (unsigned int i = 0; i < sizeof(hardware().sck_pin); i++) {
+		if (pin == hardware().sck_pin[i]) return true;
+	}
+	return false;
 }
 
 // setCS() is not intended for use from normal Arduino programs/sketches.

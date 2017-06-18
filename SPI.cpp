@@ -153,13 +153,13 @@ const SPIClass::SPI_Hardware_t SPIClass::spi0_hardware = {
 	32767, DMAMUX_SOURCE_SPI0_TX, DMAMUX_SOURCE_SPI0_RX,
 	_spi_dma_rxISR0,
 	12, 8,
-	2, 2,
+	PORT_PCR_MUX(2), PORT_PCR_MUX(2),
 	11, 7,
-	2, 2,
+	PORT_PCR_DSE | PORT_PCR_MUX(2), PORT_PCR_MUX(2),
 	13, 14,
-	2, 2,
+	PORT_PCR_DSE | PORT_PCR_MUX(2), PORT_PCR_MUX(2),
 	10, 2, 9, 6, 20, 23, 21, 22, 15,
-	2,  2, 2,  2,  2,  2,  2,  2,  2,
+	PORT_PCR_MUX(2),  PORT_PCR_MUX(2), PORT_PCR_MUX(2),  PORT_PCR_MUX(2),  PORT_PCR_MUX(2),  PORT_PCR_MUX(2),  PORT_PCR_MUX(2),  PORT_PCR_MUX(2),  PORT_PCR_MUX(2),
 	0x1, 0x1, 0x2, 0x2, 0x4, 0x4, 0x8, 0x8, 0x10
 };
 SPIClass SPI((uintptr_t)&KINETISK_SPI0, (uintptr_t)&SPIClass::spi0_hardware);
@@ -173,13 +173,13 @@ const SPIClass::SPI_Hardware_t SPIClass::spi0_hardware = {
 	32767, DMAMUX_SOURCE_SPI0_TX, DMAMUX_SOURCE_SPI0_RX,
 	_spi_dma_rxISR0,
 	12, 8, 39, 255,
-	2, 2, 2, 0,
+	PORT_PCR_MUX(2), PORT_PCR_MUX(2), PORT_PCR_MUX(2), 0,
 	11, 7, 28, 255,
-	2, 2, 2, 0,
+	PORT_PCR_MUX(2), PORT_PCR_MUX(2), PORT_PCR_MUX(2), 0,
 	13, 14, 27,
-	2, 2, 2,
+	PORT_PCR_MUX(2), PORT_PCR_MUX(2), PORT_PCR_MUX(2),
 	10, 2, 9, 6, 20, 23, 21, 22, 15, 26, 45,
-	2,  2, 2,  2,  2,  2,  2,  2,  2,   2,   3,
+	PORT_PCR_MUX(2),  PORT_PCR_MUX(2), PORT_PCR_MUX(2),  PORT_PCR_MUX(2),  PORT_PCR_MUX(2),  PORT_PCR_MUX(2),  PORT_PCR_MUX(2),  PORT_PCR_MUX(2),  PORT_PCR_MUX(2),   PORT_PCR_MUX(2),   PORT_PCR_MUX(3),
 	0x1, 0x1, 0x2, 0x2, 0x4, 0x4, 0x8, 0x8, 0x10, 0x1, 0x20
 };
 const SPIClass::SPI_Hardware_t SPIClass::spi1_hardware = {
@@ -192,13 +192,13 @@ const SPIClass::SPI_Hardware_t SPIClass::spi1_hardware = {
 	#endif
 	_spi_dma_rxISR1,
 	1, 5, 61, 59,
-	2, 7, 2, 7,
+	PORT_PCR_MUX(2), PORT_PCR_MUX(7), PORT_PCR_MUX(2), PORT_PCR_MUX(7),
 	0, 21, 61, 59,
-	2, 7, 7, 2,
+	PORT_PCR_MUX(2), PORT_PCR_MUX(7), PORT_PCR_MUX(7), PORT_PCR_MUX(2),
 	32, 20, 60,
-	2, 7, 2,
+	PORT_PCR_MUX(2), PORT_PCR_MUX(7), PORT_PCR_MUX(2),
 	6, 31, 58, 62, 63, 255, 255, 255, 255, 255, 255,
-	7,  2,  2,  2,  2,  0,  0,  0,  0,   0,   0,
+	PORT_PCR_MUX(7),  PORT_PCR_MUX(2),  PORT_PCR_MUX(2),  PORT_PCR_MUX(2),  PORT_PCR_MUX(2),  0,  0,  0,  0,   0,   0,
 	0x1, 0x1, 0x2, 0x1, 0x4, 0, 0, 0, 0, 0, 0
 };
 const SPIClass::SPI_Hardware_t SPIClass::spi2_hardware = {
@@ -211,13 +211,13 @@ const SPIClass::SPI_Hardware_t SPIClass::spi2_hardware = {
 	#endif
 	_spi_dma_rxISR2,
 	45, 51, 255, 255,
-	2, 2, 0, 0,
+	PORT_PCR_MUX(2), PORT_PCR_MUX(2), 0, 0,
 	44, 52, 255, 255,
-	2, 2, 0, 0,
+	PORT_PCR_MUX(2), PORT_PCR_MUX(2), 0, 0,
 	46, 53, 255,
-	2, 2, 0,
+	PORT_PCR_MUX(2), PORT_PCR_MUX(2), 0,
 	43, 54, 55, 255, 255, 255, 255, 255, 255, 255, 255,
-	2,  2,  2,  0,  0,  0,  0,  0,  0,   0,   0,
+	PORT_PCR_MUX(2),  PORT_PCR_MUX(2),  PORT_PCR_MUX(2),  0,  0,  0,  0,  0,  0,   0,   0,
 	0x1, 0x2, 0x1, 0, 0, 0, 0, 0, 0, 0, 0
 };
 SPIClass SPI((uintptr_t)&KINETISK_SPI0, (uintptr_t)&SPIClass::spi0_hardware);
@@ -236,11 +236,11 @@ void SPIClass::begin()
 	port().CTAR1 = SPI_CTAR_FMSZ(15) | SPI_CTAR_PBR(0) | SPI_CTAR_BR(1) | SPI_CTAR_CSSCK(1);
 	port().MCR = SPI_MCR_MSTR | SPI_MCR_PCSIS(0x1F);
 	reg = portConfigRegister(hardware().mosi_pin[mosi_pin_index]);
-	*reg = PORT_PCR_MUX(hardware().mosi_mux[mosi_pin_index]);
+	*reg = hardware().mosi_mux[mosi_pin_index];
 	reg = portConfigRegister(hardware().miso_pin[miso_pin_index]);
-	*reg= PORT_PCR_MUX(hardware().miso_mux[miso_pin_index]);
+	*reg= hardware().miso_mux[miso_pin_index];
 	reg = portConfigRegister(hardware().sck_pin[sck_pin_index]);
-	*reg = PORT_PCR_MUX(hardware().sck_mux[sck_pin_index]);
+	*reg = hardware().sck_mux[sck_pin_index];
 }
 
 void SPIClass::end()
@@ -409,7 +409,7 @@ uint8_t SPIClass::setCS(uint8_t pin)
 	for (unsigned int i = 0; i < sizeof(hardware().cs_pin); i++) {
 		if (pin == hardware().cs_pin[i]) {
 			volatile uint32_t *reg = portConfigRegister(pin);
-			*reg = PORT_PCR_MUX(hardware().cs_mux[i]);
+			*reg = hardware().cs_mux[i];
 			return hardware().cs_mask[i];
 		}
 	}
@@ -533,13 +533,13 @@ const SPIClass::SPI_Hardware_t SPIClass::spi0_hardware = {
 	0, // BR index 0
 	DMAMUX_SOURCE_SPI0_TX, DMAMUX_SOURCE_SPI0_RX, _spi_dma_rxISR0,
 	12, 8,
-	2, 2,
+	PORT_PCR_MUX(2), PORT_PCR_MUX(2),
 	11, 7,
-	2, 2,
+	 PORT_PCR_DSE | PORT_PCR_MUX(2), PORT_PCR_MUX(2),
 	13, 14,
-	2, 2,
+	 PORT_PCR_DSE | PORT_PCR_MUX(2), PORT_PCR_MUX(2),
 	10, 2,
-	2,  2,
+	PORT_PCR_MUX(2),  PORT_PCR_MUX(2),
 	0x1, 0x1
 };
 SPIClass SPI((uintptr_t)&KINETISL_SPI0, (uintptr_t)&SPIClass::spi0_hardware);
@@ -550,13 +550,13 @@ const SPIClass::SPI_Hardware_t SPIClass::spi1_hardware = {
 	1, // BR index 1 in SPI Settings
 	DMAMUX_SOURCE_SPI1_TX, DMAMUX_SOURCE_SPI1_RX, _spi_dma_rxISR1,
 	1, 5,
-	2, 2,
+	PORT_PCR_MUX(2), PORT_PCR_MUX(2),
 	0, 21,
-	2, 2,
+	PORT_PCR_MUX(2), PORT_PCR_MUX(2),
 	20, 255,
-	2, 0,
+	PORT_PCR_MUX(2), 0,
 	6, 255,
-	2,  0,
+	PORT_PCR_MUX(2),  0,
 	0x1, 0
 };
 SPIClass SPI1((uintptr_t)&KINETISL_SPI1, (uintptr_t)&SPIClass::spi1_hardware);
@@ -571,11 +571,11 @@ void SPIClass::begin()
 	port().C2 = 0;
 	uint8_t tmp __attribute__((unused)) = port().S;
 	reg = portConfigRegister(hardware().mosi_pin[mosi_pin_index]);
-	*reg = PORT_PCR_MUX(hardware().mosi_mux[mosi_pin_index]);
+	*reg = hardware().mosi_mux[mosi_pin_index];
 	reg = portConfigRegister(hardware().miso_pin[miso_pin_index]);
-	*reg = PORT_PCR_MUX(hardware().miso_mux[miso_pin_index]);
+	*reg = hardware().miso_mux[miso_pin_index];
 	reg = portConfigRegister(hardware().sck_pin[sck_pin_index]);
-	*reg = PORT_PCR_MUX(hardware().sck_mux[sck_pin_index]);
+	*reg = hardware().sck_mux[sck_pin_index];
 }
 
 void SPIClass::end() {
@@ -703,7 +703,7 @@ uint8_t SPIClass::setCS(uint8_t pin)
 	for (unsigned int i = 0; i < sizeof(hardware().cs_pin); i++) {
 		if  (pin == hardware().cs_pin[i]) {
 			volatile uint32_t *reg = portConfigRegister(pin);
-			*reg = PORT_PCR_MUX(hardware().cs_mux[i]);
+			*reg = hardware().cs_mux[i];
 			return hardware().cs_mask[i];
 		}
 	}

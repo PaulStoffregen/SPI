@@ -421,6 +421,13 @@ void SPIClass::setMOSI(uint8_t pin)
 	if (pin != hardware().mosi_pin[mosi_pin_index]) {
 		for (unsigned int i = 0; i < sizeof(hardware().mosi_pin); i++) {
 			if  (pin == hardware().mosi_pin[i]) {
+				if (hardware().clock_gate_register & hardware().clock_gate_mask) {
+					volatile uint32_t *reg;
+					reg = portConfigRegister(hardware().mosi_pin[mosi_pin_index]);
+					*reg = 0;
+					reg = portConfigRegister(hardware().mosi_pin[i]);
+					*reg = hardware().mosi_mux[i];
+				}	
 				mosi_pin_index = i;
 				return;
 			}
@@ -433,6 +440,13 @@ void SPIClass::setMISO(uint8_t pin)
 	if (pin != hardware().miso_pin[miso_pin_index]) {
 		for (unsigned int i = 0; i < sizeof(hardware().miso_pin); i++) {
 			if  (pin == hardware().miso_pin[i]) {
+				if (hardware().clock_gate_register & hardware().clock_gate_mask) {
+					volatile uint32_t *reg;
+					reg = portConfigRegister(hardware().miso_pin[miso_pin_index]);
+					*reg = 0;
+					reg = portConfigRegister(hardware().miso_pin[i]);
+					*reg = hardware().miso_mux[i];
+				}	
 				miso_pin_index = i;
 				return;
 			}
@@ -445,6 +459,13 @@ void SPIClass::setSCK(uint8_t pin)
 	if (pin != hardware().sck_pin[sck_pin_index]) {
 		for (unsigned int i = 0; i < sizeof(hardware().sck_pin); i++) {
 			if  (pin == hardware().sck_pin[i]) {
+				if (hardware().clock_gate_register & hardware().clock_gate_mask) {
+					volatile uint32_t *reg;
+					reg = portConfigRegister(hardware().sck_pin[sck_pin_index]);
+					*reg = 0;
+					reg = portConfigRegister(hardware().sck_pin[i]);
+					*reg = hardware().sck_mux[i];
+				}	
 				sck_pin_index = i;
 				return;
 			}
@@ -634,6 +655,13 @@ void SPIClass::setMOSI(uint8_t pin)
 	if (pin != hardware().mosi_pin[mosi_pin_index]) {
 		for (unsigned int i = 0; i < sizeof(hardware().mosi_pin); i++) {
 			if (pin == hardware().mosi_pin[i] ) {
+				if (hardware().clock_gate_register & hardware().clock_gate_mask) {
+					volatile uint32_t *reg;
+					reg = portConfigRegister(hardware().mosi_pin[mosi_pin_index]);
+					*reg = 0;
+					reg = portConfigRegister(hardware().mosi_pin[i]);
+					*reg = hardware().mosi_mux[i];
+				}	
 				mosi_pin_index = i;
 				return;
 			}
@@ -646,6 +674,13 @@ void SPIClass::setMISO(uint8_t pin)
 	if (pin != hardware().miso_pin[miso_pin_index]) {
 		for (unsigned int i = 0; i < sizeof(hardware().miso_pin); i++) {
 			if (pin == hardware().miso_pin[i] ) {
+				if (hardware().clock_gate_register & hardware().clock_gate_mask) {
+					volatile uint32_t *reg;
+					reg = portConfigRegister(hardware().miso_pin[miso_pin_index]);
+					*reg = 0;
+					reg = portConfigRegister(hardware().miso_pin[i]);
+					*reg = hardware().miso_mux[i];
+				}	
 				miso_pin_index = i;
 				return;
 			}
@@ -658,6 +693,13 @@ void SPIClass::setSCK(uint8_t pin)
 	if (pin != hardware().sck_pin[sck_pin_index]) {
 		for (unsigned int i = 0; i < sizeof(hardware().sck_pin); i++) {
 			if (pin == hardware().sck_pin[i] ) {
+				if (hardware().clock_gate_register & hardware().clock_gate_mask) {
+					volatile uint32_t *reg;
+					reg = portConfigRegister(hardware().sck_pin[sck_pin_index]);
+					*reg = 0;
+					reg = portConfigRegister(hardware().sck_pin[i]);
+					*reg = hardware().sck_mux[i];
+				}	
 				sck_pin_index = i;
 				return;
 			}

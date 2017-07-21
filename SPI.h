@@ -54,6 +54,47 @@
 /*     8 bit AVR-based boards				  */
 /**********************************************************/
 
+#ifdef SPI_QUEUED_TRANSFERS
+
+class SPISettings;
+
+/*
+ * Allows an SPI transfer to occurr asynchronously while the main loop
+ * continues to run. The is_completed flag is set to true once the transfer is
+ * complete. The CS pin is automatically asserted before the transfer starts,
+ * and deasserted at the completion of the transfer. New transfers may be
+ * safely queued from an ISR.
+ * 
+ * buffer - pointer to the buffer for the transfer. The contents will be replaced with received values from the chip
+ * len    - number of bytes to transfer, stored as a 7 bit quantity, 127 bytes is the max transfer size
+ * settings - a reference to an SPISettings structure
+ * cs_pin - the number value of the Chip-select pin for this transfer
+ * assert_state - 0 or 1 (low or high) representing the state of the CS pin that activates the device
+ *
+ */
+class SPIQueuedTransfer {
+public:
+	SPIQueuedTransfer(uint8_t *buffer, uint8_t len, SPISettings &settings, uint8_t cs_pin, uint8_t assert_state) : 
+		buffer(buffer), len(len), cs_pin(cs_pin), assert_state(assert_state), is_completed(0), settings(settings), next(NULL) {}
+
+	
+private:
+	uint8_t *buffer;
+	uint8_t len : 7;
+
+	uint8_t cs_pin : 6;
+	uint8_t assert_state : 1;
+public: 
+	uint8_t is_completed : 1;
+private:
+	SPISettings &settings;
+	SPIQueuedTransfer *next;
+
+	friend class SPIClass;
+	friend void spi_isr(void); //So that the ISR can acess all the private variables
+};
+#endif
+
 #if defined(__AVR__)
 
 // define SPI_AVR_EIMSK for AVR boards with external interrupt pins
@@ -184,8 +225,8 @@ public:
 			pinMode(SPI_TRANSACTION_MISMATCH_LED, OUTPUT);
 			digitalWrite(SPI_TRANSACTION_MISMATCH_LED, HIGH);
 		}
-		inTransactionFlag = 1;
 		#endif
+		inTransactionFlag = 1;
 		SPCR = settings.spcr;
 		SPSR = settings.spsr;
 	}
@@ -244,8 +285,8 @@ public:
 			pinMode(SPI_TRANSACTION_MISMATCH_LED, OUTPUT);
 			digitalWrite(SPI_TRANSACTION_MISMATCH_LED, HIGH);
 		}
-		inTransactionFlag = 0;
 		#endif
+		inTransactionFlag = 0;
 		if (interruptMode > 0) {
 			#ifdef SPI_AVR_EIMSK
 			if (interruptMode == 1) {
@@ -256,7 +297,49 @@ public:
 				SREG = interruptSave;
 			}
 		}
+		//TODO: Kick off a queued transfer immediately if there is one
 	}
+
+#ifdef SPI_QUEUED_TRANSFERS
+	inline static void queueTransfer(SPIQueuedTransfer *transfer) {
+		uint8_t tmp = SREG;
+		cli();
+		transfer->next = nextTransfer;
+		nextTransfer = transfer;
+
+		if(!inTransactionFlag)
+			workTransferQueue();
+		SREG = tmp;
+	}
+
+	//NOTE: Interrupts MUST be disabled when calling this method! 
+	inline static void workTransferQueue() {
+		digitalWrite(15, 1);
+		inTransactionFlag = 1;
+
+		SPIQueuedTransfer *t = nextTransfer;
+		if(!t) {
+			inTransactionFlag = 0;
+			digitalWrite(15, 0);
+			return;
+		}
+
+		nextTransfer = t->next;
+
+		//1. Configure SPI as requested
+		SPCR = t->settings.spcr | _BV(SPIE); //Config + interrupts
+		SPSR = t->settings.spsr;
+
+		//2. Assert Chip-Select
+		digitalWrite(t->cs_pin, t->assert_state);
+
+		//3. Begin transfer of first byte
+		curTransfer = t;
+		curTransferPos = 0; //This is the index of the byte we're sending
+		SPDR = t->buffer[0];
+		digitalWrite(15, 0);
+	}
+#endif
 
 	// Disable the SPI bus
 	static void end();
@@ -288,9 +371,14 @@ private:
 	static uint8_t interruptMode; // 0=none, 1=mask, 2=global
 	static uint8_t interruptMask; // which interrupts to mask
 	static uint8_t interruptSave; // temp storage, to restore state
-	#ifdef SPI_TRANSACTION_MISMATCH_LED
+#ifdef SPI_QUEUED_TRANSFERS
+	static SPIQueuedTransfer *nextTransfer; //Stores the next transfer, or NULL if there aren't any
+	static SPIQueuedTransfer *curTransfer;  //Currently in-progress transfer, or NULL if there isn't any
+	static uint8_t curTransferPos; //Position in the current byte being read/written
+
+	friend void spi_isr(void); //So that the ISR can acess all the private variables
+#endif
 	static uint8_t inTransactionFlag;
-	#endif
 };
 
 

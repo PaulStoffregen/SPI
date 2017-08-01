@@ -308,8 +308,8 @@ private:
 	static uint8_t interruptSave; // temp storage, to restore state
 	#ifdef SPI_TRANSACTION_MISMATCH_LED
 	static uint8_t inTransactionFlag;
-	static uint8_t _transferWriteFill;
 	#endif
+	static uint8_t _transferWriteFill;
 };
 
 

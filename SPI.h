@@ -15,6 +15,16 @@
 
 #include <Arduino.h>
 
+#if defined(__arm__) && defined(TEENSYDUINO)
+#if defined(__has_include) && __has_include(<EventResponder.h>)
+// SPI_HAS_TRANSFER_ASYNC - Defined to say that the SPI supports an ASYNC version
+// of the SPI_HAS_TRANSFER_BUF
+#define SPI_HAS_TRANSFER_ASYNC 1
+#include <DMAChannel.h>
+#include <EventResponder.h>
+#endif
+#endif
+
 // SPI_HAS_TRANSACTION means SPI has beginTransaction(), endTransaction(),
 // usingInterrupt(), and SPISetting(clock, bitOrder, dataMode)
 #define SPI_HAS_TRANSACTION 1
@@ -24,6 +34,12 @@
 // each SPI.beginTransaction().  Connect a LED to this pin.  The LED will turn
 // on if any mismatch is ever detected.
 //#define SPI_TRANSACTION_MISMATCH_LED 5
+
+// SPI_HAS_TRANSFER_BUF - is defined to signify that this library supports
+// a version of transfer which allows you to pass in both TX and RX buffer
+// pointers, either of which could be NULL
+#define SPI_HAS_TRANSFER_BUF 1
+
 
 #ifndef LSBFIRST
 #define LSBFIRST 0
@@ -235,6 +251,8 @@ public:
 		while (!(SPSR & _BV(SPIF))) ;
 		*p = SPDR;
 	}
+	static void setTransferWriteFill(uint8_t ch ) {_transferWriteFill = ch;}
+	static void transfer(const void * buf, void * retbuf, uint32_t count);
 
 	// After performing a group of transfers and releasing the chip select
 	// signal, this function allows others to access the SPI bus
@@ -291,6 +309,7 @@ private:
 	#ifdef SPI_TRANSACTION_MISMATCH_LED
 	static uint8_t inTransactionFlag;
 	#endif
+	static uint8_t _transferWriteFill;
 };
 
 
@@ -432,6 +451,8 @@ public:
 	static const SPI_Hardware_t spi0_hardware;
 	static const SPI_Hardware_t spi1_hardware;
 	static const SPI_Hardware_t spi2_hardware;
+
+	enum DMAState { notAllocated, idle, active, completed};
 public:
 	constexpr SPIClass(uintptr_t myport, uintptr_t myhardware)
 		: port_addr(myport), hardware_addr(myhardware) {
@@ -519,7 +540,23 @@ public:
 		while (!(port().SR & SPI_SR_TCF)) ; // wait
 		return port().POPR;
 	}
-	void transfer(void *buf, size_t count);
+
+	void inline transfer(void *buf, size_t count) {transfer(buf, buf, count);}
+	void setTransferWriteFill(uint8_t ch ) {_transferWriteFill = ch;}
+	void transfer(const void * buf, void * retbuf, size_t count);
+
+	// Asynch support (DMA )
+#ifdef SPI_HAS_TRANSFER_ASYNC
+	bool transfer(const void *txBuffer, void *rxBuffer, size_t count,  EventResponderRef  event_responder);
+
+	friend void _spi_dma_rxISR0(void);
+	friend void _spi_dma_rxISR1(void);
+	friend void _spi_dma_rxISR2(void);
+
+	inline void dma_rxisr(void);
+#endif
+
+
 	// After performing a group of transfers and releasing the chip select
 	// signal, this function allows others to access the SPI bus
 	void endTransaction(void) {
@@ -622,6 +659,18 @@ private:
 	#ifdef SPI_TRANSACTION_MISMATCH_LED
 	uint8_t inTransactionFlag = 0;
 	#endif
+
+	uint8_t _transferWriteFill = 0;
+
+	// DMA Support
+#ifdef SPI_HAS_TRANSFER_ASYNC
+	bool initDMAChannels();
+	DMAState     _dma_state = DMAState::notAllocated;
+	uint32_t	_dma_count_remaining = 0;	// How many bytes left to output after current DMA completes
+	DMAChannel   *_dmaTX = nullptr;
+	DMAChannel    *_dmaRX = nullptr;
+	EventResponder *_dma_event_responder = nullptr;
+#endif
 };
 
 
@@ -766,6 +815,7 @@ public:
 	} SPI_Hardware_t;
 	static const SPI_Hardware_t spi0_hardware;
 	static const SPI_Hardware_t spi1_hardware;
+	enum DMAState { notAllocated, idle, active, completed};
 public:
 	constexpr SPIClass(uintptr_t myport, uintptr_t myhardware)
 		: port_addr(myport), hardware_addr(myhardware) {
@@ -850,6 +900,18 @@ public:
 		while (!(port().S & SPI_S_SPRF)) ; // wait
 		*p = port().DL;
 	}
+
+	void setTransferWriteFill(uint8_t ch ) {_transferWriteFill = ch;}
+	void transfer(const void * buf, void * retbuf, size_t count);
+
+	// Asynch support (DMA )
+#ifdef SPI_HAS_TRANSFER_ASYNC
+	bool transfer(const void *txBuffer, void *rxBuffer, size_t count,  EventResponderRef  event_responder);
+
+	friend void _spi_dma_rxISR0(void);
+	friend void _spi_dma_rxISR1(void);
+	inline void dma_isr(void);
+#endif
 
 	// After performing a group of transfers and releasing the chip select
 	// signal, this function allows others to access the SPI bus
@@ -945,6 +1007,17 @@ private:
 	#ifdef SPI_TRANSACTION_MISMATCH_LED
 	uint8_t inTransactionFlag = 0;
 	#endif
+	uint8_t _transferWriteFill = 0;
+#ifdef SPI_HAS_TRANSFER_ASYNC
+	// DMA Support
+	bool initDMAChannels();
+
+	DMAState _dma_state = DMAState::notAllocated;
+	uint32_t _dma_count_remaining = 0;	// How many bytes left to output after current DMA completes
+	DMAChannel *_dmaTX = nullptr;
+	DMAChannel *_dmaRX = nullptr;
+	EventResponder *_dma_event_responder = nullptr;
+#endif
 };
 
 

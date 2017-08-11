@@ -23,10 +23,16 @@ setClockDivider	KEYWORD2
 setMOSI	KEYWORD2
 setMISO	KEYWORD2
 setSCK	KEYWORD2
+setCS	KEYWORD2
 usingInterrupt	KEYWORD2
 beginTransaction	KEYWORD2
 endTransaction	KEYWORD2
 SPISettings	KEYWORD2
+pinIsChipSelect	KEYWORD2
+pinIsMOSI	KEYWORD2
+pinIsMISO	KEYWORD2
+pinIsSCK	KEYWORD2
+
 
 #######################################
 # Constants (LITERAL1)

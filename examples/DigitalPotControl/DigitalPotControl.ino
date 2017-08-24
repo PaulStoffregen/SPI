@@ -37,7 +37,7 @@ const int slaveSelectPin = 10;
 void setup() {
   // set the slaveSelectPin as an output:
   pinMode (slaveSelectPin, OUTPUT);
-  pinMode (slaveSelectPin, HIGH);
+  digitalWrite (slaveSelectPin, HIGH);
   // initialize SPI:
   SPI.begin(); 
 }

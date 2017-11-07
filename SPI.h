@@ -520,10 +520,10 @@ public:
 		inTransactionFlag = 1;
 		#endif
 		if (port().CTAR0 != settings.ctar) {
-			port().MCR = SPI_MCR_MDIS | SPI_MCR_HALT | SPI_MCR_PCSIS(0x1F);
+			port().MCR = SPI_MCR_MDIS | SPI_MCR_HALT | SPI_MCR_PCSIS(0x3F);
 			port().CTAR0 = settings.ctar;
 			port().CTAR1 = settings.ctar| SPI_CTAR_FMSZ(8);
-			port().MCR = SPI_MCR_MSTR | SPI_MCR_PCSIS(0x1F);
+			port().MCR = SPI_MCR_MSTR | SPI_MCR_PCSIS(0x3F);
 		}
 	}
 

@@ -473,6 +473,9 @@ uint8_t SPIClass::setCS(uint8_t pin)
 
 void SPIClass::setMOSI(uint8_t pin)
 {
+	if (hardware_addr == (uintptr_t)&spi0_hardware) {
+		SPCR.setMOSI_soft(pin);
+	}
 	if (pin != hardware().mosi_pin[mosi_pin_index]) {
 		for (unsigned int i = 0; i < sizeof(hardware().mosi_pin); i++) {
 			if  (pin == hardware().mosi_pin[i]) {
@@ -492,6 +495,9 @@ void SPIClass::setMOSI(uint8_t pin)
 
 void SPIClass::setMISO(uint8_t pin)
 {
+	if (hardware_addr == (uintptr_t)&spi0_hardware) {
+		SPCR.setMISO_soft(pin);
+	}
 	if (pin != hardware().miso_pin[miso_pin_index]) {
 		for (unsigned int i = 0; i < sizeof(hardware().miso_pin); i++) {
 			if  (pin == hardware().miso_pin[i]) {
@@ -511,6 +517,9 @@ void SPIClass::setMISO(uint8_t pin)
 
 void SPIClass::setSCK(uint8_t pin)
 {
+	if (hardware_addr == (uintptr_t)&spi0_hardware) {
+		SPCR.setSCK_soft(pin);
+	}
 	if (pin != hardware().sck_pin[sck_pin_index]) {
 		for (unsigned int i = 0; i < sizeof(hardware().sck_pin); i++) {
 			if  (pin == hardware().sck_pin[i]) {

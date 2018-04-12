@@ -540,6 +540,13 @@ public:
 		while (!(port().SR & SPI_SR_TCF)) ; // wait
 		return port().POPR;
 	}
+        void transfer16(uint16_t *data, int len) {
+                for ( uint16_t i = 0; i < len; i++ ) {
+                  port().SR = SPI_SR_TCF;
+                  port().PUSHR = data[i] | SPI_PUSHR_CTAS(1);
+                  while (!(port().SR & SPI_SR_TCF)) ; // wait
+                }
+        }
 
 	void inline transfer(void *buf, size_t count) {transfer(buf, buf, count);}
 	void setTransferWriteFill(uint8_t ch ) {_transferWriteFill = ch;}

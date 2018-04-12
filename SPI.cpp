@@ -760,7 +760,7 @@ bool SPIClass::initDMAChannels() {
 }
 
 //=========================================================================
-// Main Aync Transfer function
+// Main Async Transfer function
 //=========================================================================
 
 bool SPIClass::transfer(const void *buf, void *retbuf, size_t count, EventResponderRef event_responder) {
@@ -1194,7 +1194,7 @@ bool SPIClass::initDMAChannels() {
 }
 
 //=========================================================================
-// Main Aync Transfer function
+// Main Async Transfer function
 //=========================================================================
 bool SPIClass::transfer(const void *buf, void *retbuf, size_t count, EventResponderRef event_responder) {
 	if (_dma_state == DMAState::notAllocated) {

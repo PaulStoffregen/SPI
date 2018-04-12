@@ -540,12 +540,16 @@ public:
 		while (!(port().SR & SPI_SR_TCF)) ; // wait
 		return port().POPR;
 	}
-        void transfer16(uint16_t *data, int len) {
-                for ( uint16_t i = 0; i < len; i++ ) {
-                  port().SR = SPI_SR_TCF;
-                  port().PUSHR = data[i] | SPI_PUSHR_CTAS(1);
-                  while (!(port().SR & SPI_SR_TCF)) ; // wait
-                }
+        void transfer16(const void * buf, void * retbuf, size_t count) {
+          if ( !count ) return;
+          const uint16_t *b = (const uint16_t *)buf;
+          uint16_t *r = (uint16_t *)retbuf;
+          for ( uint16_t i = 0; i < count; i++ ) {
+            port().SR = SPI_SR_TCF;
+            port().PUSHR = b[i] | SPI_PUSHR_CTAS(1);
+            while (!(port().SR & SPI_SR_TCF)) ; // wait
+            if ( r ) r[i] = port().POPR;
+          }
         }
 
 	void inline transfer(void *buf, size_t count) {transfer(buf, buf, count);}

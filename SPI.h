@@ -465,20 +465,37 @@ public:
 	// prevent conflicts.  The input interruptNumber is the number used
 	// with attachInterrupt.  If SPI is used from a different interrupt
 	// (eg, a timer), interruptNumber should be 255.
-	void usingInterrupt(uint8_t n) {
-		if (n == 3 || n == 4 || n == 24 || n == 33) {
-			usingInterrupt(IRQ_PORTA);
-		} else if (n == 0 || n == 1 || (n >= 16 && n <= 19) || n == 25 || n == 32) {
-			usingInterrupt(IRQ_PORTB);
-		} else if ((n >= 9 && n <= 13) || n == 15 || n == 22 || n == 23
-		  || (n >= 27 && n <= 30)) {
-			usingInterrupt(IRQ_PORTC);
-		} else if (n == 2 || (n >= 5 && n <= 8) || n == 14 || n == 20 || n == 21) {
-			usingInterrupt(IRQ_PORTD);
-		} else if (n == 26 || n == 31) {
-			usingInterrupt(IRQ_PORTE);
-		}
-	}
+  #if defined(__MK20DX128__) || defined(__MK20DX256__)
+    void usingInterrupt(uint8_t n) {
+      if (n == 3 || n == 4 || n == 24 || n == 33) {
+        usingInterrupt(IRQ_PORTA);
+      } else if (n == 0 || n == 1 || (n >= 16 && n <= 19) || n == 25 || n == 32) {
+        usingInterrupt(IRQ_PORTB);
+      } else if ((n >= 9 && n <= 13) || n == 15 || n == 22 || n == 23
+        || (n >= 27 && n <= 30)) {
+        usingInterrupt(IRQ_PORTC);
+      } else if (n == 2 || (n >= 5 && n <= 8) || n == 14 || n == 20 || n == 21) {
+        usingInterrupt(IRQ_PORTD);
+      } else if (n == 26 || n == 31) {
+        usingInterrupt(IRQ_PORTE);
+      }
+    }
+  #elif defined(__MK64FX512__) || defined(__MK66FX1M0__)
+    void usingInterrupt(uint8_t n) {
+      if (n == 3 || n == 4 || (n >= 25 && n <= 28) || (n >= 39 && n <= 42)) {
+        usingInterrupt(IRQ_PORTA);
+      } else if (n == 0 || n == 1 || (n >= 16 && n <= 19) || (n >= 29 && n <= 32) || (n >= 43 && n <= 46) || n == 49 || n == 50) {
+        usingInterrupt(IRQ_PORTB);
+      } else if ((n >= 9 && n <= 13) || n == 15 || n == 22 || n == 23 || (n >= 35 && n <= 38)) {
+        usingInterrupt(IRQ_PORTC);
+      } else if (n == 2 || (n >= 5 && n <= 8) || n == 14 || n == 20 || n == 21 || n == 47 || n == 48 || (n >= 51 && n <= 55)) {
+        usingInterrupt(IRQ_PORTD);
+      } else if (n == 24 || n == 33 || n == 36 || n == 56 || n == 57) {
+        usingInterrupt(IRQ_PORTE);
+      }
+    }
+  #endif
+
 	void usingInterrupt(IRQ_NUMBER_t interruptName);
 	void notUsingInterrupt(IRQ_NUMBER_t interruptName);
 

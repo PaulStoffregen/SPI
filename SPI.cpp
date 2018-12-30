@@ -1257,4 +1257,81 @@ bool SPIClass::transfer(const void *buf, void *retbuf, size_t count, EventRespon
 }
 #endif //SPI_HAS_TRANSFER_ASYNC
 
+
+
+
+/**********************************************************/
+/*     32 bit Teensy 4.x                                  */
+/**********************************************************/
+
+#elif defined(__arm__) && defined(TEENSYDUINO) && (defined(__IMXRT1052__) || defined(__IMXRT1062__))
+
+#include "debug/printf.h"
+
+void SPIClass::begin()
+{
+
+	// CBCMR[LPSPI_CLK_SEL] - PLL2 = 528 MHz
+	// CBCMR[LPSPI_PODF] - div4 = 132 MHz
+
+	CCM_CCGR1 &= ~CCM_CCGR1_LPSPI4(CCM_CCGR_ON);
+
+	CCM_CBCMR = (CCM_CBCMR & ~(CCM_CBCMR_LPSPI_PODF_MASK | CCM_CBCMR_LPSPI_CLK_SEL_MASK)) |
+		CCM_CBCMR_LPSPI_PODF(6) | CCM_CBCMR_LPSPI_CLK_SEL(2); // pg 714
+	uint32_t fastio = IOMUXC_PAD_SRE | IOMUXC_PAD_DSE(3) | IOMUXC_PAD_SPEED(3);
+	//uint32_t fastio = IOMUXC_PAD_DSE(3) | IOMUXC_PAD_SPEED(3);
+	IOMUXC_SW_PAD_CTL_PAD_GPIO_B0_01 = fastio;
+	IOMUXC_SW_PAD_CTL_PAD_GPIO_B0_02 = fastio;
+	IOMUXC_SW_PAD_CTL_PAD_GPIO_B0_03 = fastio;
+
+	//printf("CBCMR = %08lX\n", CCM_CBCMR);
+	CCM_CCGR1 |= CCM_CCGR1_LPSPI4(CCM_CCGR_ON);
+	IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_01 = 3 | 0x10; // SDI
+	IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_02 = 3 | 0x10; // SDO
+	IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_03 = 3 | 0x10; // SCK
+	//digitalWriteFast(10, HIGH);
+	//pinMode(10, OUTPUT);
+	//digitalWriteFast(10, HIGH);
+	LPSPI4_CR = LPSPI_CR_RST;
+}
+
+
+const SPIClass::SPI_Hardware_t SPIClass::lpspi4_hardware = {
+	CCM_CCGR1,
+	CCM_CCGR1_LPSPI4(CCM_CCGR_ON)
+};
+SPIClass SPI(0, (uintptr_t)&SPIClass::lpspi4_hardware);
+
+
+void SPIClass::transfer(const void * buf, void * retbuf, size_t count)
+{
+	const uint8_t *tx = (const uint8_t *)buf;
+	uint8_t *rx = (uint8_t *)retbuf;
+
+	// inefficient, but simplest possible way to get started
+	while (count > 0) {
+		uint8_t b = 0;
+		if (tx) b = *tx++;
+		if (rx) {
+			*rx++ = transfer(b);
+		} else {
+			transfer(b);
+		}
+		count--;
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #endif

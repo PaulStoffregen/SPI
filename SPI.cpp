@@ -1295,10 +1295,87 @@ void SPIClass::begin()
 	LPSPI4_CR = LPSPI_CR_RST;
 }
 
+uint8_t SPIClass::pinIsChipSelect(uint8_t pin)
+{
+	return 0;
+}
+
+bool SPIClass::pinIsChipSelect(uint8_t pin1, uint8_t pin2)
+{
+	uint8_t pin1_mask, pin2_mask;
+	if ((pin1_mask = (uint8_t)pinIsChipSelect(pin1)) == 0) return false;
+	if ((pin2_mask = (uint8_t)pinIsChipSelect(pin2)) == 0) return false;
+	//Serial.printf("pinIsChipSelect %d %d %x %x\n\r", pin1, pin2, pin1_mask, pin2_mask);
+	if ((pin1_mask & pin2_mask) != 0) return false;
+	return true;
+}
+
+bool SPIClass::pinIsMOSI(uint8_t pin)
+{
+	for (unsigned int i = 0; i < sizeof(hardware().mosi_pin); i++) {
+		if (pin == hardware().mosi_pin[i]) return true;
+	}
+	return false;
+}
+
+bool SPIClass::pinIsMISO(uint8_t pin)
+{
+	for (unsigned int i = 0; i < sizeof(hardware().miso_pin); i++) {
+		if (pin == hardware().miso_pin[i]) return true;
+	}
+	return false;
+}
+
+bool SPIClass::pinIsSCK(uint8_t pin)
+{
+	for (unsigned int i = 0; i < sizeof(hardware().sck_pin); i++) {
+		if (pin == hardware().sck_pin[i]) return true;
+	}
+	return false;
+}
+
+// setCS() is not intended for use from normal Arduino programs/sketches.
+uint8_t SPIClass::setCS(uint8_t pin)
+{
+	/*
+	for (unsigned int i = 0; i < sizeof(hardware().cs_pin); i++) {
+		if (pin == hardware().cs_pin[i]) {
+			volatile uint32_t *reg = portConfigRegister(pin);
+			*reg = hardware().cs_mux[i];
+			return hardware().cs_mask[i];
+		}
+	} */
+	return 0;
+}
+
+void SPIClass::setMOSI(uint8_t pin)
+{
+	// Currently only one defined so just return...
+}
+
+void SPIClass::setMISO(uint8_t pin)
+{
+	// Currently only one defined so just return...
+}
+
+void SPIClass::setSCK(uint8_t pin)
+{
+	// Currently only one defined so just return...
+}
+
+
+
 
 const SPIClass::SPI_Hardware_t SPIClass::lpspi4_hardware = {
 	CCM_CCGR1,
-	CCM_CCGR1_LPSPI4(CCM_CCGR_ON)
+	12, 
+	3 | 0x10,
+	11,
+	3 | 0x10,
+	13,
+	3 | 0x10,
+	10,
+	3 | 0x10,
 };
 SPIClass SPI(0, (uintptr_t)&SPIClass::lpspi4_hardware);
 

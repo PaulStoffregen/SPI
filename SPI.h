@@ -1071,13 +1071,23 @@ private:
 	friend class SPIClass;
 };
 
-
-
 class SPIClass { // Teensy 4
 public:
+	static const uint8_t CNT_MISO_PINS = 1;
+	static const uint8_t CNT_MOSI_PINS = 1;
+	static const uint8_t CNT_SCK_PINS = 1;
+	static const uint8_t CNT_CS_PINS = 1;
 	typedef struct {
 		volatile uint32_t &clock_gate_register;
 		uint32_t clock_gate_mask;
+		uint8_t  miso_pin[CNT_MISO_PINS];
+		uint32_t  miso_mux[CNT_MISO_PINS];
+		uint8_t  mosi_pin[CNT_MOSI_PINS];
+		uint32_t  mosi_mux[CNT_MOSI_PINS];
+		uint8_t  sck_pin[CNT_SCK_PINS];
+		uint32_t  sck_mux[CNT_SCK_PINS];
+		uint8_t  cs_pin[CNT_CS_PINS];
+		uint32_t  cs_mux[CNT_CS_PINS];
 	} SPI_Hardware_t;
 	static const SPI_Hardware_t lpspi4_hardware;
 
@@ -1170,12 +1180,13 @@ public:
 		//return port().POPR;
 	}
 	uint16_t transfer16(uint16_t data) {
-		transfer(data >> 8);
-		transfer(data & 255);
+		uint16_t ret_val = transfer(data >> 8);
+		ret_val = (ret_val << 8) | transfer(data & 255);
 		//port().SR = SPI_SR_TCF;
 		//port().PUSHR = data | SPI_PUSHR_CTAS(1);
 		//while (!(port().SR & SPI_SR_TCF)) ; // wait
 		//return port().POPR;
+		return ret_val;
 	}
 
 	void inline transfer(void *buf, size_t count) {transfer(buf, buf, count);}

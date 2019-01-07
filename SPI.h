@@ -1052,8 +1052,19 @@ private:
 	void init_AlwaysInline(uint32_t clock, uint8_t bitOrder, uint8_t dataMode)
 	  __attribute__((__always_inline__)) {
 		// TODO: make these implement settings - for now, just fixed config
-		ccr = LPSPI_CCR_SCKDIV(2);
-		tcr = LPSPI_TCR_FRAMESZ(7);
+
+		uint32_t d, div, clkhz = 528000000/7;  // LPSPI peripheral clock
+		if (clock == 0) clock =1;
+		d= clkhz/clock;
+		if (d && clkhz/d > clock) d++;
+		if (d > 257) d= 257;  // max div
+		if (d > 2) {
+			div = d-2;
+		} else {
+			div =0;
+		}
+		ccr = LPSPI_CCR_SCKDIV(div);
+		tcr = LPSPI_TCR_FRAMESZ(7);    // TCR has polarity and bit order too
 	}
 	uint32_t ccr; // clock config, pg 2660 (RT1050 ref, rev 2)
 	uint32_t tcr; // transmit command, pg 2664 (RT1050 ref, rev 2)
@@ -1138,10 +1149,10 @@ public:
 		//printf("trans\n");
 		LPSPI4_CR = 0;
 		LPSPI4_CFGR1 = LPSPI_CFGR1_MASTER | LPSPI_CFGR1_SAMPLE;
-		//LPSPI4_CCR = settings.ccr;
-		//LPSPI4_TCR = settings.tcr;
-		LPSPI4_CCR = LPSPI_CCR_SCKDIV(4);
-		LPSPI4_TCR = LPSPI_TCR_FRAMESZ(7);
+		LPSPI4_CCR = settings.ccr;
+		LPSPI4_TCR = settings.tcr;
+		//LPSPI4_CCR = LPSPI_CCR_SCKDIV(4);
+		//LPSPI4_TCR = LPSPI_TCR_FRAMESZ(7);
 		LPSPI4_CR = LPSPI_CR_MEN;
 	}
 

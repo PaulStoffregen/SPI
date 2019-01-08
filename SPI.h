@@ -1179,13 +1179,12 @@ public:
 		//return port().POPR;
 	}
 	uint16_t transfer16(uint16_t data) {
-		uint16_t ret_val = transfer(data >> 8);
-		ret_val = (ret_val << 8) | transfer(data & 255);
-		//port().SR = SPI_SR_TCF;
-		//port().PUSHR = data | SPI_PUSHR_CTAS(1);
-		//while (!(port().SR & SPI_SR_TCF)) ; // wait
-		//return port().POPR;
-		return ret_val;
+		uint32_t tcr = port->TCR;
+		port->TCR = (tcr & 0xfffff000) | LPSPI_TCR_FRAMESZ(15);  // turn on 16 bit mode 
+		port->TDR = data;		// output 16 bit data.
+		while ((port->RSR & LPSPI_RSR_RXEMPTY)) ;	// wait while the RSR fifo is empty...
+		port->TCR = tcr;	// restore back
+		return port->RDR;
 	}
 
 	void inline transfer(void *buf, size_t count) {transfer(buf, buf, count);}

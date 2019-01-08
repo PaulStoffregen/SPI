@@ -1063,7 +1063,7 @@ private:
 		} else {
 			div =0;
 		}
-		ccr = LPSPI_CCR_SCKDIV(div);
+		ccr = LPSPI_CCR_SCKDIV(div) | LPSPI_CCR_DBT(div/2);
 		tcr = LPSPI_TCR_FRAMESZ(7);    // TCR has polarity and bit order too
 	}
 	uint32_t ccr; // clock config, pg 2660 (RT1050 ref, rev 2)

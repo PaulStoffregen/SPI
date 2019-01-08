@@ -1297,6 +1297,10 @@ void SPIClass::begin()
 	//pinMode(10, OUTPUT);
 	//digitalWriteFast(10, HIGH);
 	port->CR = LPSPI_CR_RST;
+
+	// Lets initialize the Transmit FIFO watermark to FIFO size - 1... 
+	// BUGBUG:: I assume queue of 16 for now...
+	port->FCR = LPSPI_FCR_TXWATER(15);
 }
 
 uint8_t SPIClass::pinIsChipSelect(uint8_t pin)
@@ -1384,29 +1388,40 @@ SPIClass SPI(&IMXRT_LPSPI4_S, &spiclass_lpspi4_hardware);
 
 void SPIClass::transfer(const void * buf, void * retbuf, size_t count)
 {
-	const uint8_t *tx = (const uint8_t *)buf;
-	uint8_t *rx = (uint8_t *)retbuf;
 
-	// inefficient, but simplest possible way to get started
+	if (count == 0) return;
+    uint8_t *p_write = (uint8_t*)buf;
+    uint8_t *p_read = (uint8_t*)retbuf;
+    size_t count_read = count;
+
+	// Pass 1 keep it simple and don't try packing 8 bits into 16 yet..
+	// Lets clear the reader queue
+	//port->CR = LPSPI_CR_RRF;
+
 	while (count > 0) {
-		uint8_t b = 0;
-		if (tx) b = *tx++;
-		if (rx) {
-			*rx++ = transfer(b);
-		} else {
-			transfer(b);
+		// Push out the next byte; 
+		port->TDR = p_write? *p_write++ : _transferWriteFill;
+		count--; // how many bytes left to output.
+		// Make sure queue is not full before pushing next byte out
+		do {
+			if ((port->RSR & LPSPI_RSR_RXEMPTY) == 0)  {
+				uint8_t b = port->RDR;  // Read any pending RX bytes in
+				if (p_read) *p_read++ = b; 
+				count_read--;
+			}
+		} while ((port->SR & LPSPI_SR_TDF) == 0) ;
+
+	}
+
+	// now lets wait for all of the read bytes to be returned...
+	while (count_read) {
+		if ((port->RSR & LPSPI_RSR_RXEMPTY) == 0)  {
+			uint8_t b = port->RDR;  // Read any pending RX bytes in
+			if (p_read) *p_read++ = b; 
+			count_read--;
 		}
-		count--;
 	}
 }
-
-
-
-
-
-
-
-
 
 
 

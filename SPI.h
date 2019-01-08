@@ -1079,21 +1079,20 @@ public:
 	static const uint8_t CNT_CS_PINS = 1;
 	typedef struct {
 		volatile uint32_t &clock_gate_register;
-		uint32_t clock_gate_mask;
-		uint8_t  miso_pin[CNT_MISO_PINS];
-		uint32_t  miso_mux[CNT_MISO_PINS];
-		uint8_t  mosi_pin[CNT_MOSI_PINS];
-		uint32_t  mosi_mux[CNT_MOSI_PINS];
-		uint8_t  sck_pin[CNT_SCK_PINS];
-		uint32_t  sck_mux[CNT_SCK_PINS];
-		uint8_t  cs_pin[CNT_CS_PINS];
-		uint32_t  cs_mux[CNT_CS_PINS];
+		const uint32_t clock_gate_mask;
+		const uint8_t  miso_pin[CNT_MISO_PINS];
+		const uint32_t  miso_mux[CNT_MISO_PINS];
+		const uint8_t  mosi_pin[CNT_MOSI_PINS];
+		const uint32_t  mosi_mux[CNT_MOSI_PINS];
+		const uint8_t  sck_pin[CNT_SCK_PINS];
+		const uint32_t  sck_mux[CNT_SCK_PINS];
+		const uint8_t  cs_pin[CNT_CS_PINS];
+		const uint32_t  cs_mux[CNT_CS_PINS];
 	} SPI_Hardware_t;
-	static const SPI_Hardware_t lpspi4_hardware;
 
 public:
-	constexpr SPIClass(uintptr_t myport, uintptr_t myhardware)
-		: port_addr(myport), hardware_addr(myhardware) {
+	constexpr SPIClass(IMXRT_LPSPI_t *myport, const SPI_Hardware_t *myhardware)
+		: port(myport), hardware(myhardware) {
 	}
 	// Initialize the SPI library
 	void begin();
@@ -1157,22 +1156,22 @@ public:
 		#endif
 
 		//printf("trans\n");
-		LPSPI4_CR = 0;
-		LPSPI4_CFGR1 = LPSPI_CFGR1_MASTER | LPSPI_CFGR1_SAMPLE;
-		LPSPI4_CCR = settings.ccr;
-		LPSPI4_TCR = settings.tcr;
-		//LPSPI4_CCR = LPSPI_CCR_SCKDIV(4);
-		//LPSPI4_TCR = LPSPI_TCR_FRAMESZ(7);
-		LPSPI4_CR = LPSPI_CR_MEN;
+		port->CR = 0;
+		port->CFGR1 = LPSPI_CFGR1_MASTER | LPSPI_CFGR1_SAMPLE;
+		port->CCR = settings.ccr;
+		port->TCR = settings.tcr;
+		//port->CCR = LPSPI_CCR_SCKDIV(4);
+		//port->TCR = LPSPI_TCR_FRAMESZ(7);
+		port->CR = LPSPI_CR_MEN;
 	}
 
 	// Write to the SPI bus (MOSI pin) and also receive (MISO pin)
 	uint8_t transfer(uint8_t data) {
 		// TODO: check for space in fifo?
-		LPSPI4_TDR = data;
+		port->TDR = data;
 		while (1) {
-			uint32_t fifo = (LPSPI4_FSR >> 16) & 0x1F;
-			if (fifo > 0) return LPSPI4_RDR;
+			uint32_t fifo = (port->FSR >> 16) & 0x1F;
+			if (fifo > 0) return port->RDR;
 		}
 		//port().SR = SPI_SR_TCF;
 		//port().PUSHR = data;
@@ -1281,10 +1280,10 @@ public:
 
 private:
 	//KINETISK_SPI_t & port() { return *(KINETISK_SPI_t *)port_addr; }
-	const SPI_Hardware_t & hardware() { return *(const SPI_Hardware_t *)hardware_addr; }
+	IMXRT_LPSPI_t * const port;
+	const SPI_Hardware_t * const hardware;
+
 	void updateCTAR(uint32_t ctar);
-	uintptr_t port_addr;
-	uintptr_t hardware_addr;
 	uint8_t miso_pin_index = 0;
 	uint8_t mosi_pin_index = 0;
 	uint8_t sck_pin_index = 0;

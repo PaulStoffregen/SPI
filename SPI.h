@@ -71,7 +71,7 @@
 /**********************************************************/
 
 #if defined(__AVR__)
-
+#define SPI_ATOMIC_VERSION 1
 // define SPI_AVR_EIMSK for AVR boards with external interrupt pins
 #if defined(EIMSK)
   #define SPI_AVR_EIMSK	 EIMSK
@@ -321,6 +321,7 @@ private:
 #elif defined(__arm__) && defined(TEENSYDUINO) && defined(KINETISK)
 
 #define SPI_HAS_NOTUSINGINTERRUPT 1
+#define SPI_ATOMIC_VERSION 1
 
 class SPISettings {
 public:
@@ -680,6 +681,7 @@ private:
 /**********************************************************/
 
 #elif defined(__arm__) && defined(TEENSYDUINO) && defined(KINETISL)
+#define SPI_ATOMIC_VERSION 1
 
 class SPISettings {
 public:
@@ -1027,6 +1029,7 @@ private:
 /**********************************************************/
 
 #elif defined(__arm__) && defined(TEENSYDUINO) && (defined(__IMXRT1052__) || defined(__IMXRT1062__))
+#define SPI_ATOMIC_VERSION 1
 
 //#include "debug/printf.h"
 
@@ -1093,20 +1096,28 @@ public:
 	// prevent conflicts.  The input interruptNumber is the number used
 	// with attachInterrupt.  If SPI is used from a different interrupt
 	// (eg, a timer), interruptNumber should be 255.
-	/*void usingInterrupt(uint8_t n) {
-		if (n == 3 || n == 4 || n == 24 || n == 33) {
-			usingInterrupt(IRQ_PORTA);
-		} else if (n == 0 || n == 1 || (n >= 16 && n <= 19) || n == 25 || n == 32) {
-			usingInterrupt(IRQ_PORTB);
-		} else if ((n >= 9 && n <= 13) || n == 15 || n == 22 || n == 23
-		  || (n >= 27 && n <= 30)) {
-			usingInterrupt(IRQ_PORTC);
-		} else if (n == 2 || (n >= 5 && n <= 8) || n == 14 || n == 20 || n == 21) {
-			usingInterrupt(IRQ_PORTD);
-		} else if (n == 26 || n == 31) {
-			usingInterrupt(IRQ_PORTE);
+	void usingInterrupt(uint8_t n) {
+		if (n >= CORE_NUM_DIGITAL) return;
+		volatile uint32_t *gpio = portOutputRegister(n);
+		switch((uint32_t)gpio) {
+			case (uint32_t)&GPIO1_DR:
+				usingInterrupt(IRQ_GPIO1_0_15);
+				usingInterrupt(IRQ_GPIO1_16_31);
+				break;
+			case (uint32_t)&GPIO2_DR:
+				usingInterrupt(IRQ_GPIO2_0_15);
+				usingInterrupt(IRQ_GPIO2_16_31);
+				break;
+			case (uint32_t)&GPIO3_DR:
+				usingInterrupt(IRQ_GPIO3_0_15);
+				usingInterrupt(IRQ_GPIO3_16_31);
+				break;
+			case (uint32_t)&GPIO4_DR:
+				usingInterrupt(IRQ_GPIO4_0_15);
+				usingInterrupt(IRQ_GPIO4_16_31);
+				break;
 		}
-	}*/
+	}
 	void usingInterrupt(IRQ_NUMBER_t interruptName);
 	void notUsingInterrupt(IRQ_NUMBER_t interruptName);
 
@@ -1170,12 +1181,13 @@ public:
 		//return port().POPR;
 	}
 	uint16_t transfer16(uint16_t data) {
-		transfer(data >> 8);
-		transfer(data & 255);
+		uint16_t rv=transfer(data >> 8);
+		rv |=transfer(data & 255) << 8;
 		//port().SR = SPI_SR_TCF;
 		//port().PUSHR = data | SPI_PUSHR_CTAS(1);
 		//while (!(port().SR & SPI_SR_TCF)) ; // wait
 		//return port().POPR;
+		return rv;
 	}
 
 	void inline transfer(void *buf, size_t count) {transfer(buf, buf, count);}

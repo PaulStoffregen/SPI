@@ -1053,7 +1053,8 @@ private:
 	  __attribute__((__always_inline__)) {
 		// TODO: make these implement settings - for now, just fixed config
 
-		uint32_t d, div, clkhz = 528000000/7;  // LPSPI peripheral clock
+		uint32_t d, div;
+		uint32_t clkhz = 528000000u / (((CCM_CBCMR >> 26 ) & 0x07 ) + 1);  // LPSPI peripheral clock
 		if (clock == 0) clock =1;
 		d= clkhz/clock;
 		if (d && clkhz/d > clock) d++;
@@ -1216,6 +1217,16 @@ public:
 	// Disable the SPI bus
 	void end();
 
+	void setPLLDIV(uint8_t div) {
+		// CBCMR[LPSPI_CLK_SEL] - PLL2 = 528 MHz
+		// CBCMR[LPSPI_PODF] - div4 = 132 MHz
+		uint32_t cg = hardware->clock_gate_register;
+		hardware->clock_gate_register = cg & ~hardware->clock_gate_mask;
+		CCM_CBCMR = (CCM_CBCMR & ~(CCM_CBCMR_LPSPI_PODF_MASK | CCM_CBCMR_LPSPI_CLK_SEL_MASK)) |
+			CCM_CBCMR_LPSPI_PODF(div) | CCM_CBCMR_LPSPI_CLK_SEL(2); // pg 714
+		hardware->clock_gate_register = cg;
+	}
+	
 	// This function is deprecated.	 New applications should use
 	// beginTransaction() to configure SPI settings.
 	void setBitOrder(uint8_t bitOrder);

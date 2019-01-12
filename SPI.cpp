@@ -1372,6 +1372,23 @@ void SPIClass::setSCK(uint8_t pin)
 }
 
 
+void SPIClass::setBitOrder(uint8_t bitOrder)
+{
+	hardware->clock_gate_register |= hardware->clock_gate_mask;
+
+	if (bitOrder == LSBFIRST) {
+		port->TCR |= LPSPI_TCR_LSBF;
+	} else {
+		port->TCR &= ~LPSPI_TCR_LSBF;
+	}
+}
+
+void SPIClass::setDataMode(uint8_t dataMode)
+{
+	hardware->clock_gate_register |= hardware->clock_gate_mask;
+	//SPCR = (SPCR & ~SPI_MODE_MASK) | dataMode;
+}
+
 const SPIClass::SPI_Hardware_t spiclass_lpspi4_hardware = {
 	CCM_CCGR1, CCM_CCGR1_LPSPI4(CCM_CCGR_ON),
 	12, 

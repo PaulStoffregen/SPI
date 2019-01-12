@@ -1051,7 +1051,7 @@ private:
 	}
 	void init_AlwaysInline(uint32_t clock, uint8_t bitOrder, uint8_t dataMode)
 	  __attribute__((__always_inline__)) {
-		// TODO: make these implement settings - for now, just fixed config
+		// TODO: Need to check timings as related to chip selects?
 
 		uint32_t d, div, clkhz = 528000000/7;  // LPSPI peripheral clock
 		if (clock == 0) clock =1;
@@ -1065,6 +1065,16 @@ private:
 		}
 		ccr = LPSPI_CCR_SCKDIV(div) | LPSPI_CCR_DBT(div/2);
 		tcr = LPSPI_TCR_FRAMESZ(7);    // TCR has polarity and bit order too
+
+		// handle LSB setup 
+		if (bitOrder == LSBFIRST) tcr |= LPSPI_TCR_LSBF;
+
+		// Handle Data Mode
+		if (dataMode & 0x08) tcr |= LPSPI_TCR_CPOL;
+
+		// Note: On T3.2 when we set CPHA it also updated the timing.  It moved the 
+		// PCS to SCK Delay Prescaler into the After SCK Delay Prescaler	
+		if (dataMode & 0x04) tcr |= LPSPI_TCR_CPHA; 
 	}
 	uint32_t ccr; // clock config, pg 2660 (RT1050 ref, rev 2)
 	uint32_t tcr; // transmit command, pg 2664 (RT1050 ref, rev 2)

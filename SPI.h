@@ -1053,7 +1053,8 @@ private:
 	  __attribute__((__always_inline__)) {
 		// TODO: Need to check timings as related to chip selects?
 
-		uint32_t d, div, clkhz = 528000000/7;  // LPSPI peripheral clock
+		uint32_t d, div;
+		uint32_t clkhz = 528000000u / (((CCM_CBCMR >> 26 ) & 0x07 ) + 1);  // LPSPI peripheral clock
 		if (clock == 0) clock =1;
 		d= clkhz/clock;
 		if (d && clkhz/d > clock) d++;

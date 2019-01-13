@@ -1100,11 +1100,15 @@ public:
 		const uint8_t  cs_pin[CNT_CS_PINS];
 		const uint32_t  cs_mux[CNT_CS_PINS];
 	} SPI_Hardware_t;
+	static const SPI_Hardware_t spiclass_lpspi4_hardware;
 
 public:
-	constexpr SPIClass(IMXRT_LPSPI_t *myport, const SPI_Hardware_t *myhardware)
-		: port(myport), hardware(myhardware) {
+	constexpr SPIClass(uintptr_t myport, uintptr_t myhardware)
+		: port_addr(myport), hardware_addr(myhardware) {
 	}
+//	constexpr SPIClass(IMXRT_LPSPI_t *myport, const SPI_Hardware_t *myhardware)
+//		: port(myport), hardware(myhardware) {
+//	}
 	// Initialize the SPI library
 	void begin();
 
@@ -1167,22 +1171,22 @@ public:
 		#endif
 
 		//printf("trans\n");
-		port->CR = 0;
-		port->CFGR1 = LPSPI_CFGR1_MASTER | LPSPI_CFGR1_SAMPLE;
-		port->CCR = settings.ccr;
-		port->TCR = settings.tcr;
-		//port->CCR = LPSPI_CCR_SCKDIV(4);
-		//port->TCR = LPSPI_TCR_FRAMESZ(7);
-		port->CR = LPSPI_CR_MEN;
+		port().CR = 0;
+		port().CFGR1 = LPSPI_CFGR1_MASTER | LPSPI_CFGR1_SAMPLE;
+		port().CCR = settings.ccr;
+		port().TCR = settings.tcr;
+		//port().CCR = LPSPI_CCR_SCKDIV(4);
+		//port().TCR = LPSPI_TCR_FRAMESZ(7);
+		port().CR = LPSPI_CR_MEN;
 	}
 
 	// Write to the SPI bus (MOSI pin) and also receive (MISO pin)
 	uint8_t transfer(uint8_t data) {
 		// TODO: check for space in fifo?
-		port->TDR = data;
+		port().TDR = data;
 		while (1) {
-			uint32_t fifo = (port->FSR >> 16) & 0x1F;
-			if (fifo > 0) return port->RDR;
+			uint32_t fifo = (port().FSR >> 16) & 0x1F;
+			if (fifo > 0) return port().RDR;
 		}
 		//port().SR = SPI_SR_TCF;
 		//port().PUSHR = data;
@@ -1190,12 +1194,12 @@ public:
 		//return port().POPR;
 	}
 	uint16_t transfer16(uint16_t data) {
-		uint32_t tcr = port->TCR;
-		port->TCR = (tcr & 0xfffff000) | LPSPI_TCR_FRAMESZ(15);  // turn on 16 bit mode 
-		port->TDR = data;		// output 16 bit data.
-		while ((port->RSR & LPSPI_RSR_RXEMPTY)) ;	// wait while the RSR fifo is empty...
-		port->TCR = tcr;	// restore back
-		return port->RDR;
+		uint32_t tcr = port().TCR;
+		port().TCR = (tcr & 0xfffff000) | LPSPI_TCR_FRAMESZ(15);  // turn on 16 bit mode 
+		port().TDR = data;		// output 16 bit data.
+		while ((port().RSR & LPSPI_RSR_RXEMPTY)) ;	// wait while the RSR fifo is empty...
+		port().TCR = tcr;	// restore back
+		return port().RDR;
 	}
 
 	void inline transfer(void *buf, size_t count) {transfer(buf, buf, count);}
@@ -1289,9 +1293,14 @@ public:
 	uint8_t setCS(uint8_t pin);
 
 private:
+private:
+	IMXRT_LPSPI_t & port() { return *(IMXRT_LPSPI_t *)port_addr; }
+	const SPI_Hardware_t & hardware() { return *(const SPI_Hardware_t *)hardware_addr; }
+	uintptr_t port_addr;
+	uintptr_t hardware_addr;
 	//KINETISK_SPI_t & port() { return *(KINETISK_SPI_t *)port_addr; }
-	IMXRT_LPSPI_t * const port;
-	const SPI_Hardware_t * const hardware;
+//	IMXRT_LPSPI_t * const port;
+//	const SPI_Hardware_t * const hardware;
 
 	void updateCTAR(uint32_t ctar);
 	uint8_t miso_pin_index = 0;

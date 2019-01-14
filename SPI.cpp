@@ -1266,7 +1266,7 @@ bool SPIClass::transfer(const void *buf, void *retbuf, size_t count, EventRespon
 
 #elif defined(__arm__) && defined(TEENSYDUINO) && (defined(__IMXRT1052__) || defined(__IMXRT1062__))
 
-#include "debug/printf.h"
+//#include "debug/printf.h"
 
 void SPIClass::begin()
 {
@@ -1274,54 +1274,133 @@ void SPIClass::begin()
 	// CBCMR[LPSPI_CLK_SEL] - PLL2 = 528 MHz
 	// CBCMR[LPSPI_PODF] - div4 = 132 MHz
 
-	CCM_CCGR1 &= ~CCM_CCGR1_LPSPI4(CCM_CCGR_ON);
+
+	hardware->clock_gate_register &= ~hardware->clock_gate_mask;
 
 	CCM_CBCMR = (CCM_CBCMR & ~(CCM_CBCMR_LPSPI_PODF_MASK | CCM_CBCMR_LPSPI_CLK_SEL_MASK)) |
 		CCM_CBCMR_LPSPI_PODF(6) | CCM_CBCMR_LPSPI_CLK_SEL(2); // pg 714
+
 	uint32_t fastio = IOMUXC_PAD_SRE | IOMUXC_PAD_DSE(3) | IOMUXC_PAD_SPEED(3);
 	//uint32_t fastio = IOMUXC_PAD_DSE(3) | IOMUXC_PAD_SPEED(3);
-	IOMUXC_SW_PAD_CTL_PAD_GPIO_B0_01 = fastio;
-	IOMUXC_SW_PAD_CTL_PAD_GPIO_B0_02 = fastio;
-	IOMUXC_SW_PAD_CTL_PAD_GPIO_B0_03 = fastio;
+	Serial.printf("SPI MISO: %d MOSI: %d, SCK: %d\n", hardware->miso_pin[miso_pin_index], hardware->mosi_pin[mosi_pin_index], hardware->sck_pin[sck_pin_index]);
+	*(portControlRegister(hardware->miso_pin[miso_pin_index])) = fastio;
+	*(portControlRegister(hardware->mosi_pin[mosi_pin_index])) = fastio;
+	*(portControlRegister(hardware->sck_pin[sck_pin_index])) = fastio;
 
 	//printf("CBCMR = %08lX\n", CCM_CBCMR);
-	CCM_CCGR1 |= CCM_CCGR1_LPSPI4(CCM_CCGR_ON);
-	IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_01 = 3 | 0x10; // SDI
-	IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_02 = 3 | 0x10; // SDO
-	IOMUXC_SW_MUX_CTL_PAD_GPIO_B0_03 = 3 | 0x10; // SCK
+	hardware->clock_gate_register |= hardware->clock_gate_mask;
+	*(portConfigRegister(hardware->miso_pin[miso_pin_index])) = hardware->miso_mux[miso_pin_index];
+	*(portConfigRegister(hardware->mosi_pin [mosi_pin_index])) = hardware->mosi_mux[mosi_pin_index];
+	*(portConfigRegister(hardware->sck_pin [sck_pin_index])) = hardware->sck_mux[sck_pin_index];
+
 	//digitalWriteFast(10, HIGH);
 	//pinMode(10, OUTPUT);
 	//digitalWriteFast(10, HIGH);
-	LPSPI4_CR = LPSPI_CR_RST;
+	port->CR = LPSPI_CR_RST;
+
+	// Lets initialize the Transmit FIFO watermark to FIFO size - 1... 
+	// BUGBUG:: I assume queue of 16 for now...
+	port->FCR = LPSPI_FCR_TXWATER(15);
+}
+
+uint8_t SPIClass::pinIsChipSelect(uint8_t pin)
+{
+	return 0;
+}
+
+bool SPIClass::pinIsChipSelect(uint8_t pin1, uint8_t pin2)
+{
+	uint8_t pin1_mask, pin2_mask;
+	if ((pin1_mask = (uint8_t)pinIsChipSelect(pin1)) == 0) return false;
+	if ((pin2_mask = (uint8_t)pinIsChipSelect(pin2)) == 0) return false;
+	//Serial.printf("pinIsChipSelect %d %d %x %x\n\r", pin1, pin2, pin1_mask, pin2_mask);
+	if ((pin1_mask & pin2_mask) != 0) return false;
+	return true;
+}
+
+bool SPIClass::pinIsMOSI(uint8_t pin)
+{
+	for (unsigned int i = 0; i < sizeof(hardware->mosi_pin); i++) {
+		if (pin == hardware->mosi_pin[i]) return true;
+	}
+	return false;
+}
+
+bool SPIClass::pinIsMISO(uint8_t pin)
+{
+	for (unsigned int i = 0; i < sizeof(hardware->miso_pin); i++) {
+		if (pin == hardware->miso_pin[i]) return true;
+	}
+	return false;
+}
+
+bool SPIClass::pinIsSCK(uint8_t pin)
+{
+	for (unsigned int i = 0; i < sizeof(hardware->sck_pin); i++) {
+		if (pin == hardware->sck_pin[i]) return true;
+	}
+	return false;
+}
+
+// setCS() is not intended for use from normal Arduino programs/sketches.
+uint8_t SPIClass::setCS(uint8_t pin)
+{
+	/*
+	for (unsigned int i = 0; i < sizeof(hardware->cs_pin); i++) {
+		if (pin == hardware->cs_pin[i]) {
+			volatile uint32_t *reg = portConfigRegister(pin);
+			*reg = hardware->cs_mux[i];
+			return hardware->cs_mask[i];
+		}
+	} */
+	return 0;
+}
+
+void SPIClass::setMOSI(uint8_t pin)
+{
+	// Currently only one defined so just return...
+}
+
+void SPIClass::setMISO(uint8_t pin)
+{
+	// Currently only one defined so just return...
+}
+
+void SPIClass::setSCK(uint8_t pin)
+{
+	// Currently only one defined so just return...
 }
 
 
-const SPIClass::SPI_Hardware_t SPIClass::lpspi4_hardware = {
-	CCM_CCGR1,
-	CCM_CCGR1_LPSPI4(CCM_CCGR_ON)
-};
-SPIClass SPI(0, (uintptr_t)&SPIClass::lpspi4_hardware);
-
-
-void SPIClass::transfer(const void * buf, void * retbuf, size_t count)
+void SPIClass::setBitOrder(uint8_t bitOrder)
 {
-	const uint8_t *tx = (const uint8_t *)buf;
-	uint8_t *rx = (uint8_t *)retbuf;
+	hardware->clock_gate_register |= hardware->clock_gate_mask;
 
-	// inefficient, but simplest possible way to get started
-	while (count > 0) {
-		uint8_t b = 0;
-		if (tx) b = *tx++;
-		if (rx) {
-			*rx++ = transfer(b);
-		} else {
-			transfer(b);
-		}
-		count--;
+	if (bitOrder == LSBFIRST) {
+		port->TCR |= LPSPI_TCR_LSBF;
+	} else {
+		port->TCR &= ~LPSPI_TCR_LSBF;
 	}
 }
 
+void SPIClass::setDataMode(uint8_t dataMode)
+{
+	hardware->clock_gate_register |= hardware->clock_gate_mask;
+	//SPCR = (SPCR & ~SPI_MODE_MASK) | dataMode;
+}
 
+const SPIClass::SPI_Hardware_t spiclass_lpspi4_hardware = {
+	CCM_CCGR1, CCM_CCGR1_LPSPI4(CCM_CCGR_ON),
+	12, 
+	3 | 0x10,
+	11,
+	3 | 0x10,
+	13,
+	3 | 0x10,
+	10,
+	3 | 0x10,
+};
+SPIClass SPI(&IMXRT_LPSPI4_S, &spiclass_lpspi4_hardware);
 
 void SPIClass::usingInterrupt(IRQ_NUMBER_t interruptName)
 {
@@ -1349,10 +1428,42 @@ void SPIClass::notUsingInterrupt(IRQ_NUMBER_t interruptName)
 	}
 }
 
+void SPIClass::transfer(const void * buf, void * retbuf, size_t count)
+{
 
+	if (count == 0) return;
+    uint8_t *p_write = (uint8_t*)buf;
+    uint8_t *p_read = (uint8_t*)retbuf;
+    size_t count_read = count;
 
+	// Pass 1 keep it simple and don't try packing 8 bits into 16 yet..
+	// Lets clear the reader queue
+	//port->CR = LPSPI_CR_RRF;
 
+	while (count > 0) {
+		// Push out the next byte; 
+		port->TDR = p_write? *p_write++ : _transferWriteFill;
+		count--; // how many bytes left to output.
+		// Make sure queue is not full before pushing next byte out
+		do {
+			if ((port->RSR & LPSPI_RSR_RXEMPTY) == 0)  {
+				uint8_t b = port->RDR;  // Read any pending RX bytes in
+				if (p_read) *p_read++ = b; 
+				count_read--;
+			}
+		} while ((port->SR & LPSPI_SR_TDF) == 0) ;
 
+	}
+
+	// now lets wait for all of the read bytes to be returned...
+	while (count_read) {
+		if ((port->RSR & LPSPI_RSR_RXEMPTY) == 0)  {
+			uint8_t b = port->RDR;  // Read any pending RX bytes in
+			if (p_read) *p_read++ = b; 
+			count_read--;
+		}
+	}
+}
 
 
 

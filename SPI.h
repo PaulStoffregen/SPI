@@ -1181,13 +1181,12 @@ public:
 		//return port().POPR;
 	}
 	uint16_t transfer16(uint16_t data) {
-		uint16_t rv=transfer(data >> 8);
-		rv |=transfer(data & 255) << 8;
+		transfer(data >> 8);
+		transfer(data & 255) << 8;
 		//port().SR = SPI_SR_TCF;
 		//port().PUSHR = data | SPI_PUSHR_CTAS(1);
 		//while (!(port().SR & SPI_SR_TCF)) ; // wait
 		//return port().POPR;
-		return rv;
 	}
 
 	void inline transfer(void *buf, size_t count) {transfer(buf, buf, count);}

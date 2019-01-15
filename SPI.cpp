@@ -1305,17 +1305,15 @@ void SPIClass::begin()
 
 uint8_t SPIClass::pinIsChipSelect(uint8_t pin)
 {
+	for (unsigned int i = 0; i < sizeof(hardware().cs_pin); i++) {
+		if (pin == hardware().cs_pin[i]) return 1;
+	}
 	return 0;
 }
 
 bool SPIClass::pinIsChipSelect(uint8_t pin1, uint8_t pin2)
 {
-	uint8_t pin1_mask, pin2_mask;
-	if ((pin1_mask = (uint8_t)pinIsChipSelect(pin1)) == 0) return false;
-	if ((pin2_mask = (uint8_t)pinIsChipSelect(pin2)) == 0) return false;
-	//Serial.printf("pinIsChipSelect %d %d %x %x\n\r", pin1, pin2, pin1_mask, pin2_mask);
-	if ((pin1_mask & pin2_mask) != 0) return false;
-	return true;
+	return false;	 // only one CS defined
 }
 
 bool SPIClass::pinIsMOSI(uint8_t pin)
@@ -1345,14 +1343,12 @@ bool SPIClass::pinIsSCK(uint8_t pin)
 // setCS() is not intended for use from normal Arduino programs/sketches.
 uint8_t SPIClass::setCS(uint8_t pin)
 {
-	/*
 	for (unsigned int i = 0; i < sizeof(hardware().cs_pin); i++) {
 		if (pin == hardware().cs_pin[i]) {
-			volatile uint32_t *reg = portConfigRegister(pin);
-			*reg = hardware().cs_mux[i];
-			return hardware().cs_mask[i];
+			*(portConfigRegister(pin)) = hardware().sck_mux[i];
+			return 1;
 		}
-	} */
+	}
 	return 0;
 }
 

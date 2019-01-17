@@ -1402,6 +1402,31 @@ const SPIClass::SPI_Hardware_t spiclass_lpspi4_hardware = {
 };
 SPIClass SPI(&IMXRT_LPSPI4_S, &spiclass_lpspi4_hardware);
 
+void SPIClass::usingInterrupt(IRQ_NUMBER_t interruptName)
+{
+	uint32_t n = (uint32_t)interruptName;
+
+	if (n >= NVIC_NUM_INTERRUPTS) return;
+
+	//Serial.print("usingInterrupt ");
+	//Serial.println(n);
+	interruptMasksUsed |= (1 << (n >> 5));
+	interruptMask[n >> 5] |= (1 << (n & 0x1F));
+	//Serial.printf("interruptMasksUsed = %d\n", interruptMasksUsed);
+	//Serial.printf("interruptMask[0] = %08X\n", interruptMask[0]);
+	//Serial.printf("interruptMask[1] = %08X\n", interruptMask[1]);
+	//Serial.printf("interruptMask[2] = %08X\n", interruptMask[2]);
+}
+
+void SPIClass::notUsingInterrupt(IRQ_NUMBER_t interruptName)
+{
+	uint32_t n = (uint32_t)interruptName;
+	if (n >= NVIC_NUM_INTERRUPTS) return;
+	interruptMask[n >> 5] &= ~(1 << (n & 0x1F));
+	if (interruptMask[n >> 5] == 0) {
+		interruptMasksUsed &= ~(1 << (n >> 5));
+	}
+}
 
 void SPIClass::transfer(const void * buf, void * retbuf, size_t count)
 {

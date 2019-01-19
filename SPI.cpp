@@ -1463,7 +1463,7 @@ void SPIClass::transfer(const void * buf, void * retbuf, size_t count)
 }
 
 
-
+void SPIClass::end(){}
 
 
 

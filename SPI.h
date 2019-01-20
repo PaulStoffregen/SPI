@@ -1055,9 +1055,15 @@ private:
 	void init_AlwaysInline(uint32_t clock, uint8_t bitOrder, uint8_t dataMode)
 	  __attribute__((__always_inline__)) {
 		// TODO: Need to check timings as related to chip selects?
-
-		uint32_t d, div;
-		uint32_t clkhz = 528000000u / (((CCM_CBCMR >> 26 ) & 0x07 ) + 1);  // LPSPI peripheral clock
+				
+		const uint32_t clk_sel[4] = {664615384,  // PLL3 PFD1
+					     720000000,  // PLL3 PFD0
+					     528000000,  // PLL2
+					     396000000}; // PLL2 PFD2				
+		uint32_t cbcmr = CCM_CBCMR;
+		uint32_t clkhz = clk_sel[(cbcmr >> 4) & 0x03] / (((cbcmr >> 26 ) & 0x07 ) + 1);  // LPSPI peripheral clock
+		
+		uint32_t d, div;		
 		if (clock == 0) clock =1;
 		d= clkhz/clock;
 		if (d && clkhz/d > clock) d++;

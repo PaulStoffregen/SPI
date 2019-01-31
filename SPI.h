@@ -1034,7 +1034,7 @@ private:
 //#include "debug/printf.h"
 
 // TODO......
-#undef SPI_HAS_TRANSFER_ASYNC
+//#undef SPI_HAS_TRANSFER_ASYNC
 
 class SPISettings {
 public:
@@ -1100,6 +1100,9 @@ public:
 	typedef struct {
 		volatile uint32_t &clock_gate_register;
 		const uint32_t clock_gate_mask;
+		uint8_t  tx_dma_channel;
+		uint8_t  rx_dma_channel;
+		void     (*dma_rxisr)();
 		const uint8_t  miso_pin[CNT_MISO_PINS];
 		const uint32_t  miso_mux[CNT_MISO_PINS];
 		const uint8_t  mosi_pin[CNT_MOSI_PINS];
@@ -1228,9 +1231,6 @@ public:
 	bool transfer(const void *txBuffer, void *rxBuffer, size_t count,  EventResponderRef  event_responder);
 
 	friend void _spi_dma_rxISR0(void);
-	friend void _spi_dma_rxISR1(void);
-	friend void _spi_dma_rxISR2(void);
-
 	inline void dma_rxisr(void);
 #endif
 
@@ -1335,6 +1335,8 @@ private:
 	// DMA Support
 #ifdef SPI_HAS_TRANSFER_ASYNC
 	bool initDMAChannels();
+	enum DMAState { notAllocated, idle, active, completed};
+	enum {MAX_DMA_COUNT=32767};
 	DMAState     _dma_state = DMAState::notAllocated;
 	uint32_t	_dma_count_remaining = 0;	// How many bytes left to output after current DMA completes
 	DMAChannel   *_dmaTX = nullptr;

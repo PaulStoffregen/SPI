@@ -1400,6 +1400,42 @@ const SPIClass::SPI_Hardware_t  SPIClass::spiclass_lpspi4_hardware = {
 	3 | 0x10,
 };
 SPIClass SPI((uintptr_t)&IMXRT_LPSPI4_S, (uintptr_t)&SPIClass::spiclass_lpspi4_hardware);
+
+#if defined(__IMXRT1062__)
+// T4 has two other possible SPI objects...
+void _spi_dma_rxISR1(void) {SPI1.dma_rxisr();}
+
+const SPIClass::SPI_Hardware_t  SPIClass::spiclass_lpspi3_hardware = {
+	CCM_CCGR1, CCM_CCGR1_LPSPI3(CCM_CCGR_ON),
+	DMAMUX_SOURCE_LPSPI3_TX, DMAMUX_SOURCE_LPSPI3_RX, _spi_dma_rxISR1,
+	1, 
+	7 | 0x10,
+	26,
+	7 | 0x10,
+	27,
+	7 | 0x10,
+	0,
+	7 | 0x10,
+};
+SPIClass SPI1((uintptr_t)&IMXRT_LPSPI3_S, (uintptr_t)&SPIClass::spiclass_lpspi3_hardware);
+
+void _spi_dma_rxISR2(void) {SPI2.dma_rxisr();}
+
+const SPIClass::SPI_Hardware_t  SPIClass::spiclass_lpspi1_hardware = {
+	CCM_CCGR1, CCM_CCGR1_LPSPI1(CCM_CCGR_ON),
+	DMAMUX_SOURCE_LPSPI1_TX, DMAMUX_SOURCE_LPSPI1_RX, _spi_dma_rxISR1,
+	34, 
+	4 | 0x10,
+	35,
+	4 | 0x10,
+	37,
+	4 | 0x10,
+	36,
+	4 | 0x10,
+};
+SPIClass SPI2((uintptr_t)&IMXRT_LPSPI1_S, (uintptr_t)&SPIClass::spiclass_lpspi1_hardware);
+#endif
+
 //SPIClass SPI(&IMXRT_LPSPI4_S, &spiclass_lpspi4_hardware);
 
 void SPIClass::usingInterrupt(IRQ_NUMBER_t interruptName)

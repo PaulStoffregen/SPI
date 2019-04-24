@@ -1293,6 +1293,12 @@ void SPIClass::begin()
 	*(portConfigRegister(hardware().mosi_pin [mosi_pin_index])) = hardware().mosi_mux[mosi_pin_index];
 	*(portConfigRegister(hardware().sck_pin [sck_pin_index])) = hardware().sck_mux[sck_pin_index];
 
+	// Set the Mux pins 
+	//Serial.println("SPI: Set Input select registers");
+	hardware().sck_select_input_register = hardware().sck_select_val;
+	hardware().sdi_select_input_register = hardware().sdi_select_val;
+	hardware().sdo_select_input_register = hardware().sdo_select_val;
+
 	//digitalWriteFast(10, HIGH);
 	//pinMode(10, OUTPUT);
 	//digitalWriteFast(10, HIGH);
@@ -1398,7 +1404,11 @@ const SPIClass::SPI_Hardware_t  SPIClass::spiclass_lpspi4_hardware = {
 	3 | 0x10,
 	10,
 	3 | 0x10,
+	IOMUXC_LPSPI4_SCK_SELECT_INPUT, IOMUXC_LPSPI4_SDI_SELECT_INPUT, IOMUXC_LPSPI4_SDO_SELECT_INPUT, IOMUXC_LPSPI4_PCS0_SELECT_INPUT,
+	0, 0, 0, 0
 };
+
+
 SPIClass SPI((uintptr_t)&IMXRT_LPSPI4_S, (uintptr_t)&SPIClass::spiclass_lpspi4_hardware);
 
 #if defined(__IMXRT1062__)
@@ -1416,6 +1426,8 @@ const SPIClass::SPI_Hardware_t  SPIClass::spiclass_lpspi3_hardware = {
 	7 | 0x10,
 	0,
 	7 | 0x10,
+	IOMUXC_LPSPI3_SCK_SELECT_INPUT, IOMUXC_LPSPI3_SDI_SELECT_INPUT, IOMUXC_LPSPI3_SDO_SELECT_INPUT, IOMUXC_LPSPI3_PCS0_SELECT_INPUT,
+	1, 1, 0, 0
 };
 SPIClass SPI1((uintptr_t)&IMXRT_LPSPI3_S, (uintptr_t)&SPIClass::spiclass_lpspi3_hardware);
 
@@ -1432,6 +1444,8 @@ const SPIClass::SPI_Hardware_t  SPIClass::spiclass_lpspi1_hardware = {
 	4 | 0x10,
 	36,
 	4 | 0x10,
+	IOMUXC_LPSPI1_SCK_SELECT_INPUT, IOMUXC_LPSPI1_SDI_SELECT_INPUT, IOMUXC_LPSPI1_SDO_SELECT_INPUT, IOMUXC_LPSPI1_PCS0_SELECT_INPUT,
+	1, 1, 1, 0
 };
 SPIClass SPI2((uintptr_t)&IMXRT_LPSPI1_S, (uintptr_t)&SPIClass::spiclass_lpspi1_hardware);
 #endif

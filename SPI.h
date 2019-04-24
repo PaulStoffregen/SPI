@@ -1111,6 +1111,15 @@ public:
 		const uint32_t  sck_mux[CNT_SCK_PINS];
 		const uint8_t  cs_pin[CNT_CS_PINS];
 		const uint32_t  cs_mux[CNT_CS_PINS];
+
+		volatile uint32_t &sck_select_input_register;
+		volatile uint32_t &sdi_select_input_register;
+		volatile uint32_t &sdo_select_input_register;
+		volatile uint32_t &pcs0_select_input_register;
+		const uint8_t sck_select_val;
+		const uint8_t sdi_select_val;
+		const uint8_t sdo_select_val;
+		const uint8_t pcs0_select_val;
 	} SPI_Hardware_t;
 	static const SPI_Hardware_t spiclass_lpspi4_hardware;
 #if defined(__IMXRT1062__)

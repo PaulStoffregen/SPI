@@ -1293,6 +1293,12 @@ void SPIClass::begin()
 	*(portConfigRegister(hardware().mosi_pin [mosi_pin_index])) = hardware().mosi_mux[mosi_pin_index];
 	*(portConfigRegister(hardware().sck_pin [sck_pin_index])) = hardware().sck_mux[sck_pin_index];
 
+	// Set the Mux pins 
+	//Serial.println("SPI: Set Input select registers");
+	hardware().sck_select_input_register = hardware().sck_select_val;
+	hardware().sdi_select_input_register = hardware().sdi_select_val;
+	hardware().sdo_select_input_register = hardware().sdo_select_val;
+
 	//digitalWriteFast(10, HIGH);
 	//pinMode(10, OUTPUT);
 	//digitalWriteFast(10, HIGH);
@@ -1398,8 +1404,52 @@ const SPIClass::SPI_Hardware_t  SPIClass::spiclass_lpspi4_hardware = {
 	3 | 0x10,
 	10,
 	3 | 0x10,
+	IOMUXC_LPSPI4_SCK_SELECT_INPUT, IOMUXC_LPSPI4_SDI_SELECT_INPUT, IOMUXC_LPSPI4_SDO_SELECT_INPUT, IOMUXC_LPSPI4_PCS0_SELECT_INPUT,
+	0, 0, 0, 0
 };
+
+
 SPIClass SPI((uintptr_t)&IMXRT_LPSPI4_S, (uintptr_t)&SPIClass::spiclass_lpspi4_hardware);
+
+#if defined(__IMXRT1062__)
+// T4 has two other possible SPI objects...
+void _spi_dma_rxISR1(void) {SPI1.dma_rxisr();}
+
+const SPIClass::SPI_Hardware_t  SPIClass::spiclass_lpspi3_hardware = {
+	CCM_CCGR1, CCM_CCGR1_LPSPI3(CCM_CCGR_ON),
+	DMAMUX_SOURCE_LPSPI3_TX, DMAMUX_SOURCE_LPSPI3_RX, _spi_dma_rxISR1,
+	1, 
+	7 | 0x10,
+	26,
+	7 | 0x10,
+	27,
+	7 | 0x10,
+	0,
+	7 | 0x10,
+	IOMUXC_LPSPI3_SCK_SELECT_INPUT, IOMUXC_LPSPI3_SDI_SELECT_INPUT, IOMUXC_LPSPI3_SDO_SELECT_INPUT, IOMUXC_LPSPI3_PCS0_SELECT_INPUT,
+	1, 1, 0, 0
+};
+SPIClass SPI1((uintptr_t)&IMXRT_LPSPI3_S, (uintptr_t)&SPIClass::spiclass_lpspi3_hardware);
+
+void _spi_dma_rxISR2(void) {SPI2.dma_rxisr();}
+
+const SPIClass::SPI_Hardware_t  SPIClass::spiclass_lpspi1_hardware = {
+	CCM_CCGR1, CCM_CCGR1_LPSPI1(CCM_CCGR_ON),
+	DMAMUX_SOURCE_LPSPI1_TX, DMAMUX_SOURCE_LPSPI1_RX, _spi_dma_rxISR1,
+	34, 
+	4 | 0x10,
+	35,
+	4 | 0x10,
+	37,
+	4 | 0x10,
+	36,
+	4 | 0x10,
+	IOMUXC_LPSPI1_SCK_SELECT_INPUT, IOMUXC_LPSPI1_SDI_SELECT_INPUT, IOMUXC_LPSPI1_SDO_SELECT_INPUT, IOMUXC_LPSPI1_PCS0_SELECT_INPUT,
+	1, 1, 1, 0
+};
+SPIClass SPI2((uintptr_t)&IMXRT_LPSPI1_S, (uintptr_t)&SPIClass::spiclass_lpspi1_hardware);
+#endif
+
 //SPIClass SPI(&IMXRT_LPSPI4_S, &spiclass_lpspi4_hardware);
 
 void SPIClass::usingInterrupt(IRQ_NUMBER_t interruptName)

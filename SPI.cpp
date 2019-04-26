@@ -1421,13 +1421,13 @@ const SPIClass::SPI_Hardware_t  SPIClass::spiclass_lpspi3_hardware = {
 	1, 
 	7 | 0x10,
 	26,
-	7 | 0x10,
+	2 | 0x10,
 	27,
-	7 | 0x10,
+	2 | 0x10,
 	0,
 	7 | 0x10,
 	IOMUXC_LPSPI3_SCK_SELECT_INPUT, IOMUXC_LPSPI3_SDI_SELECT_INPUT, IOMUXC_LPSPI3_SDO_SELECT_INPUT, IOMUXC_LPSPI3_PCS0_SELECT_INPUT,
-	1, 1, 0, 0
+	1, 0, 1, 0
 };
 SPIClass SPI1((uintptr_t)&IMXRT_LPSPI3_S, (uintptr_t)&SPIClass::spiclass_lpspi3_hardware);
 

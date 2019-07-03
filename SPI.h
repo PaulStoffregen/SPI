@@ -1033,60 +1033,35 @@ private:
 
 //#include "debug/printf.h"
 
-// TODO......
-//#undef SPI_HAS_TRANSFER_ASYNC
 
 class SPISettings {
 public:
-	SPISettings(uint32_t clock, uint8_t bitOrder, uint8_t dataMode) {
-		if (__builtin_constant_p(clock)) {
-			init_AlwaysInline(clock, bitOrder, dataMode);
-		} else {
-			init_MightInline(clock, bitOrder, dataMode);
-		}
+	SPISettings(uint32_t clockIn, uint8_t bitOrderIn, uint8_t dataModeIn) : _clock(clockIn) {
+		init_AlwaysInline(bitOrderIn, dataModeIn);
 	}
-	SPISettings() {
-		init_AlwaysInline(4000000, MSBFIRST, SPI_MODE0);
+
+	SPISettings() : _clock(4000000) {
+		init_AlwaysInline(MSBFIRST, SPI_MODE0);
 	}
 private:
-	void init_MightInline(uint32_t clock, uint8_t bitOrder, uint8_t dataMode) {
-		init_AlwaysInline(clock, bitOrder, dataMode);
-	}
-	void init_AlwaysInline(uint32_t clock, uint8_t bitOrder, uint8_t dataMode)
+	void init_AlwaysInline(uint8_t bitOrder, uint8_t dataMode)
 	  __attribute__((__always_inline__)) {
-		// TODO: Need to check timings as related to chip selects?
-				
-		const uint32_t clk_sel[4] = {664615384,  // PLL3 PFD1
-					     720000000,  // PLL3 PFD0
-					     528000000,  // PLL2
-					     396000000}; // PLL2 PFD2				
-		uint32_t cbcmr = CCM_CBCMR;
-		uint32_t clkhz = clk_sel[(cbcmr >> 4) & 0x03] / (((cbcmr >> 26 ) & 0x07 ) + 1);  // LPSPI peripheral clock
-		
-		uint32_t d, div;		
-		if (clock == 0) clock =1;
-		d= clkhz/clock;
-		if (d && clkhz/d > clock) d++;
-		if (d > 257) d= 257;  // max div
-		if (d > 2) {
-			div = d-2;
-		} else {
-			div =0;
-		}
-		ccr = LPSPI_CCR_SCKDIV(div) | LPSPI_CCR_DBT(div/2);
-		tcr = LPSPI_TCR_FRAMESZ(7);    // TCR has polarity and bit order too
+			tcr = LPSPI_TCR_FRAMESZ(7);    // TCR has polarity and bit order too
 
-		// handle LSB setup 
-		if (bitOrder == LSBFIRST) tcr |= LPSPI_TCR_LSBF;
+			// handle LSB setup 
+			if (bitOrder == LSBFIRST) tcr |= LPSPI_TCR_LSBF;
 
-		// Handle Data Mode
-		if (dataMode & 0x08) tcr |= LPSPI_TCR_CPOL;
+			// Handle Data Mode
+			if (dataMode & 0x08) tcr |= LPSPI_TCR_CPOL;
 
-		// Note: On T3.2 when we set CPHA it also updated the timing.  It moved the 
-		// PCS to SCK Delay Prescaler into the After SCK Delay Prescaler	
-		if (dataMode & 0x04) tcr |= LPSPI_TCR_CPHA; 
+			// Note: On T3.2 when we set CPHA it also updated the timing.  It moved the 
+			// PCS to SCK Delay Prescaler into the After SCK Delay Prescaler	
+			if (dataMode & 0x04) tcr |= LPSPI_TCR_CPHA; 
 	}
-	uint32_t ccr; // clock config, pg 2660 (RT1050 ref, rev 2)
+
+	inline uint32_t clock() {return _clock;}
+
+	uint32_t _clock;
 	uint32_t tcr; // transmit command, pg 2664 (RT1050 ref, rev 2)
 	friend class SPIClass;
 };
@@ -1203,13 +1178,39 @@ public:
 		#endif
 
 		//printf("trans\n");
+		if (settings.clock() != _clock) {
+			static const uint32_t clk_sel[4] = {664615384,  // PLL3 PFD1
+						     720000000,  // PLL3 PFD0
+						     528000000,  // PLL2
+						     396000000}; // PLL2 PFD2				
+
+		    // First save away the new settings..
+		    _clock = settings.clock();
+
+			uint32_t cbcmr = CCM_CBCMR;
+			uint32_t clkhz = clk_sel[(cbcmr >> 4) & 0x03] / (((cbcmr >> 26 ) & 0x07 ) + 1);  // LPSPI peripheral clock
+			
+			uint32_t d, div;		
+			d = _clock ? clkhz/_clock : clkhz;
+
+			if (d && clkhz/d > _clock) d++;
+			if (d > 257) d= 257;  // max div
+			if (d > 2) {
+				div = d-2;
+			} else {
+				div =0;
+			}
+	
+			_ccr = LPSPI_CCR_SCKDIV(div) | LPSPI_CCR_DBT(div/2);
+
+		} 
+		//Serial.printf("SPI.beginTransaction CCR:%x TCR:%x\n", _ccr, settings.tcr);
 		port().CR = 0;
 		port().CFGR1 = LPSPI_CFGR1_MASTER | LPSPI_CFGR1_SAMPLE;
-		port().CCR = settings.ccr;
+		port().CCR = _ccr;
 		port().TCR = settings.tcr;
-		//port().CCR = LPSPI_CCR_SCKDIV(4);
-		//port().TCR = LPSPI_TCR_FRAMESZ(7);
 		port().CR = LPSPI_CR_MEN;
+
 	}
 
 	// Write to the SPI bus (MOSI pin) and also receive (MISO pin)
@@ -1264,6 +1265,7 @@ public:
 			if (interruptMasksUsed & 0x08) NVIC_ISER3 = interruptSave[3];
 			if (interruptMasksUsed & 0x10) NVIC_ISER4 = interruptSave[4];
 		}
+		//Serial.printf("SPI.endTransaction CCR:%x TCR:%x\n", port().CCR, port().TCR);
 	}
 
 	// Disable the SPI bus
@@ -1327,10 +1329,13 @@ private:
 	const SPI_Hardware_t & hardware() { return *(const SPI_Hardware_t *)hardware_addr; }
 	uintptr_t port_addr;
 	uintptr_t hardware_addr;
+
+	uint32_t _clock = 0;
+	uint32_t _ccr = 0;
+
 	//KINETISK_SPI_t & port() { return *(KINETISK_SPI_t *)port_addr; }
 //	IMXRT_LPSPI_t * const port;
 //	const SPI_Hardware_t * const hardware;
-
 	void updateCTAR(uint32_t ctar);
 	uint8_t miso_pin_index = 0;
 	uint8_t mosi_pin_index = 0;

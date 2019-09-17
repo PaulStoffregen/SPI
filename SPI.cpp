@@ -1307,7 +1307,48 @@ void SPIClass::begin()
 	// Lets initialize the Transmit FIFO watermark to FIFO size - 1... 
 	// BUGBUG:: I assume queue of 16 for now...
 	port().FCR = LPSPI_FCR_TXWATER(15);
+
+	// We should initialize the SPI to be in a known default state.
+	beginTransaction(SPISettings());
+	endTransaction();
 }
+
+void SPIClass::setClockDivider_noInline(uint32_t clk) {
+	// Again depreciated, but... 
+	hardware().clock_gate_register |= hardware().clock_gate_mask;
+	if (clk != _clock) {
+		static const uint32_t clk_sel[4] = {664615384,  // PLL3 PFD1
+					     720000000,  // PLL3 PFD0
+					     528000000,  // PLL2
+					     396000000}; // PLL2 PFD2				
+
+	    // First save away the new settings..
+	    _clock = clk;
+
+		uint32_t cbcmr = CCM_CBCMR;
+		uint32_t clkhz = clk_sel[(cbcmr >> 4) & 0x03] / (((cbcmr >> 26 ) & 0x07 ) + 1);  // LPSPI peripheral clock
+		
+		uint32_t d, div;		
+		d = _clock ? clkhz/_clock : clkhz;
+
+		if (d && clkhz/d > _clock) d++;
+		if (d > 257) d= 257;  // max div
+		if (d > 2) {
+			div = d-2;
+		} else {
+			div =0;
+		}
+
+		_ccr = LPSPI_CCR_SCKDIV(div) | LPSPI_CCR_DBT(div/2);
+
+	} 
+	//Serial.printf("SPI.setClockDivider_noInline CCR:%x TCR:%x\n", _ccr, port().TCR);
+	port().CR = 0;
+	port().CFGR1 = LPSPI_CFGR1_MASTER | LPSPI_CFGR1_SAMPLE;
+	port().CCR = _ccr;
+	port().CR = LPSPI_CR_MEN;
+}
+
 
 uint8_t SPIClass::pinIsChipSelect(uint8_t pin)
 {
@@ -1389,6 +1430,19 @@ void SPIClass::setDataMode(uint8_t dataMode)
 {
 	hardware().clock_gate_register |= hardware().clock_gate_mask;
 	//SPCR = (SPCR & ~SPI_MODE_MASK) | dataMode;
+
+	// Handle Data Mode
+	uint32_t tcr = port().TCR & ~(LPSPI_TCR_CPOL | LPSPI_TCR_CPHA);
+
+	if (dataMode & 0x08) tcr |= LPSPI_TCR_CPOL;
+
+	// Note: On T3.2 when we set CPHA it also updated the timing.  It moved the 
+	// PCS to SCK Delay Prescaler into the After SCK Delay Prescaler	
+	if (dataMode & 0x04) tcr |= LPSPI_TCR_CPHA; 
+
+	// Save back out
+	port().TCR = tcr;
+
 }
 
 void _spi_dma_rxISR0(void) {SPI.dma_rxisr();}

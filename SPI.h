@@ -1283,19 +1283,19 @@ public:
 	// beginTransaction() to configure SPI settings.
 	void setClockDivider(uint8_t clockDiv) {
 		if (clockDiv == SPI_CLOCK_DIV2) {
-			//setClockDivider_noInline(SPISettings(12000000, MSBFIRST, SPI_MODE0).ctar);
+			setClockDivider_noInline(12000000);
 		} else if (clockDiv == SPI_CLOCK_DIV4) {
-			//setClockDivider_noInline(SPISettings(4000000, MSBFIRST, SPI_MODE0).ctar);
+			setClockDivider_noInline(4000000);
 		} else if (clockDiv == SPI_CLOCK_DIV8) {
-			//setClockDivider_noInline(SPISettings(2000000, MSBFIRST, SPI_MODE0).ctar);
+			setClockDivider_noInline(2000000);
 		} else if (clockDiv == SPI_CLOCK_DIV16) {
-			//setClockDivider_noInline(SPISettings(1000000, MSBFIRST, SPI_MODE0).ctar);
+			setClockDivider_noInline(1000000);
 		} else if (clockDiv == SPI_CLOCK_DIV32) {
-			//setClockDivider_noInline(SPISettings(500000, MSBFIRST, SPI_MODE0).ctar);
+			setClockDivider_noInline(500000);
 		} else if (clockDiv == SPI_CLOCK_DIV64) {
-			//setClockDivider_noInline(SPISettings(250000, MSBFIRST, SPI_MODE0).ctar);
+			setClockDivider_noInline(250000);
 		} else { /* clockDiv == SPI_CLOCK_DIV128 */
-			//setClockDivider_noInline(SPISettings(125000, MSBFIRST, SPI_MODE0).ctar);
+			setClockDivider_noInline(125000);
 		}
 	}
 	void setClockDivider_noInline(uint32_t clk);

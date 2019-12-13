@@ -1118,6 +1118,9 @@ public:
 	// (eg, a timer), interruptNumber should be 255.
 	void usingInterrupt(uint8_t n) {
 		if (n >= CORE_NUM_DIGITAL) return;
+#if defined(__IMXRT1062__)
+		usingInterrupt(IRQ_GPIO6789);
+#elif defined(__IMXRT1052__)
 		volatile uint32_t *gpio = portOutputRegister(n);
 		switch((uint32_t)gpio) {
 			case (uint32_t)&GPIO1_DR:
@@ -1137,6 +1140,7 @@ public:
 				usingInterrupt(IRQ_GPIO4_16_31);
 				break;
 		}
+#endif		
 	}
 	void usingInterrupt(IRQ_NUMBER_t interruptName);
 	void notUsingInterrupt(IRQ_NUMBER_t interruptName);

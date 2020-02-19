@@ -1492,6 +1492,16 @@ void _spi_dma_rxISR2(void) {SPI2.dma_rxisr();}
 const SPIClass::SPI_Hardware_t  SPIClass::spiclass_lpspi1_hardware = {
 	CCM_CCGR1, CCM_CCGR1_LPSPI1(CCM_CCGR_ON),
 	DMAMUX_SOURCE_LPSPI1_TX, DMAMUX_SOURCE_LPSPI1_RX, _spi_dma_rxISR1,
+	#if defined(ARDUINO_TEENSY41)
+	42, 
+	4 | 0x10,
+	43,
+	4 | 0x10,
+	45,
+	4 | 0x10,
+	44,
+	4 | 0x10,
+	#else
 	34, 
 	4 | 0x10,
 	35,
@@ -1500,6 +1510,7 @@ const SPIClass::SPI_Hardware_t  SPIClass::spiclass_lpspi1_hardware = {
 	4 | 0x10,
 	36,
 	4 | 0x10,
+#endif	
 	IOMUXC_LPSPI1_SCK_SELECT_INPUT, IOMUXC_LPSPI1_SDI_SELECT_INPUT, IOMUXC_LPSPI1_SDO_SELECT_INPUT, IOMUXC_LPSPI1_PCS0_SELECT_INPUT,
 	1, 1, 1, 0
 };

@@ -1394,7 +1394,8 @@ uint8_t SPIClass::setCS(uint8_t pin)
 {
 	for (unsigned int i = 0; i < sizeof(hardware().cs_pin); i++) {
 		if (pin == hardware().cs_pin[i]) {
-			*(portConfigRegister(pin)) = hardware().sck_mux[i];
+			*(portConfigRegister(pin)) = hardware().cs_mux[i];
+			hardware().pcs0_select_input_register = hardware().pcs0_select_val[i];
 			return 1;
 		}
 	}

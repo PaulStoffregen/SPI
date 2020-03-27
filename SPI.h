@@ -1188,8 +1188,8 @@ public:
 						     528000000,  // PLL2
 						     396000000}; // PLL2 PFD2				
 
-		    // First save away the new settings..
-		    _clock = settings.clock();
+		    	// First save away the new settings..
+		    	_clock = settings.clock();
 
 			uint32_t cbcmr = CCM_CBCMR;
 			uint32_t clkhz = clk_sel[(cbcmr >> 4) & 0x03] / (((cbcmr >> 26 ) & 0x07 ) + 1);  // LPSPI peripheral clock
@@ -1204,9 +1204,7 @@ public:
 			} else {
 				div =0;
 			}
-	
-			_ccr = LPSPI_CCR_SCKDIV(div) | LPSPI_CCR_DBT(div/2);
-
+                        _ccr = LPSPI_CCR_SCKDIV(div) | LPSPI_CCR_DBT(div/2) | LPSPI_CCR_PCSSCK(div/2);
 		} 
 		//Serial.printf("SPI.beginTransaction CCR:%x TCR:%x\n", _ccr, settings.tcr);
 		port().CR = 0;

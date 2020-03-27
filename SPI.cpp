@@ -1324,8 +1324,8 @@ void SPIClass::setClockDivider_noInline(uint32_t clk) {
 					     528000000,  // PLL2
 					     396000000}; // PLL2 PFD2				
 
-	    // First save away the new settings..
-	    _clock = clk;
+	    	// First save away the new settings..
+	    	_clock = clk;
 
 		uint32_t cbcmr = CCM_CBCMR;
 		uint32_t clkhz = clk_sel[(cbcmr >> 4) & 0x03] / (((cbcmr >> 26 ) & 0x07 ) + 1);  // LPSPI peripheral clock
@@ -1341,7 +1341,7 @@ void SPIClass::setClockDivider_noInline(uint32_t clk) {
 			div =0;
 		}
 
-		_ccr = LPSPI_CCR_SCKDIV(div) | LPSPI_CCR_DBT(div/2);
+            	_ccr = LPSPI_CCR_SCKDIV(div) | LPSPI_CCR_DBT(div/2) | LPSPI_CCR_PCSSCK(div/2);
 
 	} 
 	//Serial.printf("SPI.setClockDivider_noInline CCR:%x TCR:%x\n", _ccr, port().TCR);

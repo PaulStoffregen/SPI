@@ -1073,7 +1073,7 @@ public:
 	static const uint8_t CNT_MISO_PINS = 2;
 	static const uint8_t CNT_MOSI_PINS = 2;
 	static const uint8_t CNT_SCK_PINS = 2;
-	static const uint8_t CNT_CS_PINS = 1;
+	static const uint8_t CNT_CS_PINS = 3;
 	#else
 	static const uint8_t CNT_MISO_PINS = 1;
 	static const uint8_t CNT_MOSI_PINS = 1;
@@ -1107,8 +1107,9 @@ public:
 		// CS Pins
 		const uint8_t  		cs_pin[CNT_CS_PINS];
 		const uint32_t  	cs_mux[CNT_CS_PINS];
-		const uint8_t 		pcs0_select_val[CNT_CS_PINS];
-		volatile uint32_t 	&pcs0_select_input_register;
+		const uint8_t  		cs_mask[CNT_CS_PINS];
+		const uint8_t 		pcs_select_val[CNT_CS_PINS];
+		volatile uint32_t 	*pcs_select_input_register[CNT_CS_PINS];
 
 	} SPI_Hardware_t;
 	static const SPI_Hardware_t spiclass_lpspi4_hardware;

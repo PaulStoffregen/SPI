@@ -1355,15 +1355,21 @@ void SPIClass::setClockDivider_noInline(uint32_t clk) {
 uint8_t SPIClass::pinIsChipSelect(uint8_t pin)
 {
 	for (unsigned int i = 0; i < sizeof(hardware().cs_pin); i++) {
-		if (pin == hardware().cs_pin[i]) return 1;
+		if (pin == hardware().cs_pin[i]) return hardware().cs_mask[i];
 	}
 	return 0;
 }
 
 bool SPIClass::pinIsChipSelect(uint8_t pin1, uint8_t pin2)
 {
-	return false;	 // only one CS defined
+	uint8_t pin1_mask, pin2_mask;
+	if ((pin1_mask = (uint8_t)pinIsChipSelect(pin1)) == 0) return false;
+	if ((pin2_mask = (uint8_t)pinIsChipSelect(pin2)) == 0) return false;
+	//Serial.printf("pinIsChipSelect %d %d %x %x\n\r", pin1, pin2, pin1_mask, pin2_mask);
+	if ((pin1_mask & pin2_mask) != 0) return false;
+	return true;
 }
+
 
 bool SPIClass::pinIsMOSI(uint8_t pin)
 {
@@ -1395,8 +1401,9 @@ uint8_t SPIClass::setCS(uint8_t pin)
 	for (unsigned int i = 0; i < sizeof(hardware().cs_pin); i++) {
 		if (pin == hardware().cs_pin[i]) {
 			*(portConfigRegister(pin)) = hardware().cs_mux[i];
-			hardware().pcs0_select_input_register = hardware().pcs0_select_val[i];
-			return 1;
+			if (hardware().pcs_select_input_register[i])
+				*hardware().pcs_select_input_register[i] = hardware().pcs_select_val[i];
+			return hardware().cs_mask[i];
 		}
 	}
 	return 0;
@@ -1510,10 +1517,11 @@ const SPIClass::SPI_Hardware_t  SPIClass::spiclass_lpspi4_hardware = {
 	3 | 0x10, 0,
 	0, 0,
 	IOMUXC_LPSPI4_SCK_SELECT_INPUT,
-	10, // CS
-	3 | 0x10,
-	0,
-	IOMUXC_LPSPI4_PCS0_SELECT_INPUT
+	10, 37, 36, // CS
+	3 | 0x10, 2 | 0x10, 2 | 0x10, 
+	1, 0x2, 0x4,
+	0, 0, 0,
+	&IOMUXC_LPSPI4_PCS0_SELECT_INPUT, 0, 0
 };
 #else
 const SPIClass::SPI_Hardware_t  SPIClass::spiclass_lpspi4_hardware = {
@@ -1533,8 +1541,9 @@ const SPIClass::SPI_Hardware_t  SPIClass::spiclass_lpspi4_hardware = {
 	IOMUXC_LPSPI4_SCK_SELECT_INPUT,
 	10,
 	3 | 0x10,
+	1, 
 	0,
-	IOMUXC_LPSPI4_PCS0_SELECT_INPUT
+	&IOMUXC_LPSPI4_PCS0_SELECT_INPUT
 };
 #endif
 
@@ -1548,9 +1557,9 @@ void _spi_dma_rxISR1(void) {SPI1.dma_rxisr();}
 const SPIClass::SPI_Hardware_t  SPIClass::spiclass_lpspi3_hardware = {
 	CCM_CCGR1, CCM_CCGR1_LPSPI3(CCM_CCGR_ON),
 	DMAMUX_SOURCE_LPSPI3_TX, DMAMUX_SOURCE_LPSPI3_RX, _spi_dma_rxISR1,
-	1, 255,
-	7 | 0x10, 0,
-	0, 0,
+	1, 39,
+	7 | 0x10, 2 | 0x10,
+	0, 1,
 	IOMUXC_LPSPI3_SDI_SELECT_INPUT,
 	26, 255,
 	2 | 0x10, 0,
@@ -1560,10 +1569,11 @@ const SPIClass::SPI_Hardware_t  SPIClass::spiclass_lpspi3_hardware = {
 	2 | 0x10, 0,
 	1,  0,
 	IOMUXC_LPSPI3_SCK_SELECT_INPUT,
-	0,
-	7 | 0x10,
-	0, 
-	IOMUXC_LPSPI3_PCS0_SELECT_INPUT
+	0, 38, 255,
+	7 | 0x10, 2 | 0x10, 0,
+	1, 1, 0,
+	0, 1, 0,
+	&IOMUXC_LPSPI3_PCS0_SELECT_INPUT, &IOMUXC_LPSPI3_PCS0_SELECT_INPUT, 0
 };
 #else
 const SPIClass::SPI_Hardware_t  SPIClass::spiclass_lpspi3_hardware = {
@@ -1583,8 +1593,9 @@ const SPIClass::SPI_Hardware_t  SPIClass::spiclass_lpspi3_hardware = {
 	IOMUXC_LPSPI3_SCK_SELECT_INPUT,
 	0,
 	7 | 0x10,
+	1,
 	0, 
-	IOMUXC_LPSPI3_PCS0_SELECT_INPUT
+	&IOMUXC_LPSPI3_PCS0_SELECT_INPUT
 };
 #endif
 SPIClass SPI1((uintptr_t)&IMXRT_LPSPI3_S, (uintptr_t)&SPIClass::spiclass_lpspi3_hardware);
@@ -1607,10 +1618,11 @@ const SPIClass::SPI_Hardware_t  SPIClass::spiclass_lpspi1_hardware = {
 	4 | 0x10, 3 | 0x10,
 	1, 0, 
 	IOMUXC_LPSPI1_SCK_SELECT_INPUT,
-	44,
-	4 | 0x10,
-	0,
-	IOMUXC_LPSPI1_PCS0_SELECT_INPUT
+	44, 255, 255,
+	4 | 0x10, 0, 0,
+	1, 0, 0,
+	0, 0, 0,
+	&IOMUXC_LPSPI1_PCS0_SELECT_INPUT, 0, 0
 };
 #else
 const SPIClass::SPI_Hardware_t  SPIClass::spiclass_lpspi1_hardware = {
@@ -1630,8 +1642,9 @@ const SPIClass::SPI_Hardware_t  SPIClass::spiclass_lpspi1_hardware = {
 	IOMUXC_LPSPI1_SCK_SELECT_INPUT,
 	36,
 	4 | 0x10,
+	1,
 	0,
-	IOMUXC_LPSPI1_PCS0_SELECT_INPUT
+	&IOMUXC_LPSPI1_PCS0_SELECT_INPUT
 };
 #endif
 SPIClass SPI2((uintptr_t)&IMXRT_LPSPI1_S, (uintptr_t)&SPIClass::spiclass_lpspi1_hardware);

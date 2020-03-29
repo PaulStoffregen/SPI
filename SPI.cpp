@@ -1341,7 +1341,7 @@ void SPIClass::setClockDivider_noInline(uint32_t clk) {
 			div =0;
 		}
 
-		_ccr = LPSPI_CCR_SCKDIV(div) | LPSPI_CCR_DBT(div/2);
+		_ccr = LPSPI_CCR_SCKDIV(div) | LPSPI_CCR_DBT(div/2) | LPSPI_CCR_PCSSCK(div/2);
 
 	} 
 	//Serial.printf("SPI.setClockDivider_noInline CCR:%x TCR:%x\n", _ccr, port().TCR);
@@ -1519,7 +1519,7 @@ const SPIClass::SPI_Hardware_t  SPIClass::spiclass_lpspi4_hardware = {
 	IOMUXC_LPSPI4_SCK_SELECT_INPUT,
 	10, 37, 36, // CS
 	3 | 0x10, 2 | 0x10, 2 | 0x10, 
-	1, 0x2, 0x4,
+	1, 2, 3,
 	0, 0, 0,
 	&IOMUXC_LPSPI4_PCS0_SELECT_INPUT, 0, 0
 };

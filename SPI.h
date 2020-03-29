@@ -1221,7 +1221,7 @@ public:
 				div =0;
 			}
 	
-			_ccr = LPSPI_CCR_SCKDIV(div) | LPSPI_CCR_DBT(div/2);
+			_ccr = LPSPI_CCR_SCKDIV(div) | LPSPI_CCR_DBT(div/2) | LPSPI_CCR_PCSSCK(div/2);
 
 		} 
 		//Serial.printf("SPI.beginTransaction CCR:%x TCR:%x\n", _ccr, settings.tcr);

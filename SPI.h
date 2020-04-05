@@ -1068,33 +1068,49 @@ private:
 
 class SPIClass { // Teensy 4
 public:
+	#if defined(ARDUINO_TEENSY41)
+	// T4.1 has SPI2 pins on memory connectors as well as SDCard
+	static const uint8_t CNT_MISO_PINS = 2;
+	static const uint8_t CNT_MOSI_PINS = 2;
+	static const uint8_t CNT_SCK_PINS = 2;
+	static const uint8_t CNT_CS_PINS = 3;
+	#else
 	static const uint8_t CNT_MISO_PINS = 1;
 	static const uint8_t CNT_MOSI_PINS = 1;
 	static const uint8_t CNT_SCK_PINS = 1;
 	static const uint8_t CNT_CS_PINS = 1;
+#endif
 	typedef struct {
 		volatile uint32_t &clock_gate_register;
 		const uint32_t clock_gate_mask;
 		uint8_t  tx_dma_channel;
 		uint8_t  rx_dma_channel;
 		void     (*dma_rxisr)();
-		const uint8_t  miso_pin[CNT_MISO_PINS];
-		const uint32_t  miso_mux[CNT_MISO_PINS];
-		const uint8_t  mosi_pin[CNT_MOSI_PINS];
-		const uint32_t  mosi_mux[CNT_MOSI_PINS];
-		const uint8_t  sck_pin[CNT_SCK_PINS];
-		const uint32_t  sck_mux[CNT_SCK_PINS];
-		const uint8_t  cs_pin[CNT_CS_PINS];
-		const uint32_t  cs_mux[CNT_CS_PINS];
+		// MISO pins
+		const uint8_t  		miso_pin[CNT_MISO_PINS];
+		const uint32_t  	miso_mux[CNT_MISO_PINS];
+		const uint8_t 		miso_select_val[CNT_MISO_PINS];
+		volatile uint32_t 	&miso_select_input_register;
 
-		volatile uint32_t &sck_select_input_register;
-		volatile uint32_t &sdi_select_input_register;
-		volatile uint32_t &sdo_select_input_register;
-		volatile uint32_t &pcs0_select_input_register;
-		const uint8_t sck_select_val;
-		const uint8_t sdi_select_val;
-		const uint8_t sdo_select_val;
-		const uint8_t pcs0_select_val;
+		// MOSI pins
+		const uint8_t  		mosi_pin[CNT_MOSI_PINS];
+		const uint32_t  	mosi_mux[CNT_MOSI_PINS];
+		const uint8_t 		mosi_select_val[CNT_MOSI_PINS];
+		volatile uint32_t 	&mosi_select_input_register;
+
+		// SCK pins
+		const uint8_t  		sck_pin[CNT_SCK_PINS];
+		const uint32_t  	sck_mux[CNT_SCK_PINS];
+		const uint8_t 		sck_select_val[CNT_SCK_PINS];
+		volatile uint32_t 	&sck_select_input_register;
+
+		// CS Pins
+		const uint8_t  		cs_pin[CNT_CS_PINS];
+		const uint32_t  	cs_mux[CNT_CS_PINS];
+		const uint8_t  		cs_mask[CNT_CS_PINS];
+		const uint8_t 		pcs_select_val[CNT_CS_PINS];
+		volatile uint32_t 	*pcs_select_input_register[CNT_CS_PINS];
+
 	} SPI_Hardware_t;
 	static const SPI_Hardware_t spiclass_lpspi4_hardware;
 #if defined(__IMXRT1062__)
@@ -1205,7 +1221,7 @@ public:
 				div =0;
 			}
 	
-			_ccr = LPSPI_CCR_SCKDIV(div) | LPSPI_CCR_DBT(div/2);
+			_ccr = LPSPI_CCR_SCKDIV(div) | LPSPI_CCR_DBT(div/2) | LPSPI_CCR_PCSSCK(div/2);
 
 		} 
 		//Serial.printf("SPI.beginTransaction CCR:%x TCR:%x\n", _ccr, settings.tcr);

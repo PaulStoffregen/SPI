@@ -1716,7 +1716,15 @@ void SPIClass::transfer(const void * buf, void * retbuf, size_t count)
 }
 
 
-void SPIClass::end(){}
+void SPIClass::end() {
+	// only do something if we have begun
+	if (hardware().clock_gate_register & hardware().clock_gate_mask) {
+		port().CR = 0;  // turn off the enable
+		pinMode(hardware().miso_pin[miso_pin_index], INPUT_DISABLE);
+		pinMode(hardware().mosi_pin[mosi_pin_index], INPUT_DISABLE);
+		pinMode(hardware().sck_pin[sck_pin_index], INPUT_DISABLE);
+	}
+}
 
 //=============================================================================
 // ASYNCH Support

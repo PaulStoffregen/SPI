@@ -1826,6 +1826,9 @@ bool SPIClass::transfer(const void *buf, void *retbuf, size_t count, EventRespon
 		event_responder.triggerEvent();
 		return true;
 	}
+	// lets clear cache before we update sizes...
+	if ((uint32_t)buf >= 0x20200000u)  arm_dcache_flush((uint8_t *)buf, count);
+	if ((uint32_t)retbuf >= 0x20200000u)  arm_dcache_delete(retbuf, count);
 
 	// Now handle the cases where the count > then how many we can output in one DMA request
 	if (count > MAX_DMA_COUNT) {
@@ -1841,7 +1844,6 @@ bool SPIClass::transfer(const void *buf, void *retbuf, size_t count, EventRespon
 	if (buf) {
 		_dmaTX->sourceBuffer((uint8_t*)write_data, count);  
 		_dmaTX->TCD->SLAST = 0;	// Finish with it pointing to next location
-		if ((uint32_t)write_data >= 0x20200000u)  arm_dcache_flush(write_data, count);
 	} else {
 		_dmaTX->source((uint8_t&)_transferWriteFill);   // maybe have setable value
 		DMAChanneltransferCount(_dmaTX, count);
@@ -1851,7 +1853,6 @@ bool SPIClass::transfer(const void *buf, void *retbuf, size_t count, EventRespon
 		_dmaRX->TCD->ATTR_SRC = 0;		//Make sure set for 8 bit mode...
 		_dmaRX->destinationBuffer((uint8_t*)retbuf, count);
 		_dmaRX->TCD->DLASTSGA = 0;		// At end point after our bufffer
-		if ((uint32_t)retbuf >= 0x20200000u)  arm_dcache_delete(retbuf, count);
 	} else {
 			// Write  only mode
 		_dmaRX->TCD->ATTR_SRC = 0;		//Make sure set for 8 bit mode...

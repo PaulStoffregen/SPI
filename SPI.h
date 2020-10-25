@@ -1263,7 +1263,25 @@ public:
         return port().RDR;
     }
 
-	void inline transfer(void *buf, size_t count) {transfer(buf, buf, count);}
+	void inline transfer(void *buf, size_t count) {
+#if 0
+		// Ethernet library fails if this is used.  Why?
+		if (__builtin_constant_p(count)) {
+			if (count < 1) return;
+			if (((count & 3) == 0) && (((uint32_t)buf & 3) == 0)) {
+				// size is multiple of 4 and buffer is 32 bit aligned
+				transfer32(buf, buf, count);
+				return;
+			}
+			if (((count & 1) == 0) && (((uint32_t)buf & 1) == 0)) {
+				// size is multiple of 2 and buffer is 16 bit aligned
+				transfer16(buf, buf, count);
+				return;
+			}
+		}
+#endif
+		transfer(buf, buf, count);
+	}
 	void setTransferWriteFill(uint8_t ch ) {_transferWriteFill = ch;}
 	void transfer(const void * buf, void * retbuf, size_t count);
 

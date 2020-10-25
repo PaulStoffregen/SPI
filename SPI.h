@@ -1254,10 +1254,22 @@ public:
 		port().TCR = tcr;	// restore back
 		return port().RDR;
 	}
+    uint32_t transfer32(uint32_t data) {
+        uint32_t tcr = port().TCR;
+        port().TCR = (tcr & 0xfffff000) | LPSPI_TCR_FRAMESZ(31);  // turn on 32 bit mode
+        port().TDR = data;        // output 32 bit data.
+        while ((port().RSR & LPSPI_RSR_RXEMPTY)) ;    // wait while the RSR fifo is empty...
+        port().TCR = tcr;    // restore back
+        return port().RDR;
+    }
 
 	void inline transfer(void *buf, size_t count) {transfer(buf, buf, count);}
+    void inline transfer16(void *buf, size_t count) {transfer16(buf, buf, count);}
+    void inline transfer32(void *buf, size_t count) {transfer32(buf, buf, count);}
 	void setTransferWriteFill(uint8_t ch ) {_transferWriteFill = ch;}
 	void transfer(const void * buf, void * retbuf, size_t count);
+    void transfer16(const void * buf, void * retbuf, size_t count);
+    void transfer32(const void * buf, void * retbuf, size_t count);
 
 	// Asynch support (DMA )
 #ifdef SPI_HAS_TRANSFER_ASYNC

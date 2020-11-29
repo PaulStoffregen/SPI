@@ -29,6 +29,36 @@
 // usingInterrupt(), and SPISetting(clock, bitOrder, dataMode)
 #define SPI_HAS_TRANSACTION 1
 
+// automatically matches pairs of beginTransaction() and endTransaction()
+// http://forum.pjrc.com/threads/26808-Scoped-SPI-transactions
+#define SPI_TRANSACTION_BLOCK(settings) \
+for(                                    \
+  struct                                \
+  {                                     \
+    struct Helper                       \
+    {                                   \
+      Helper() : done_(false)           \
+      {                                 \
+        SPI.beginTransaction(settings); \
+      }                                 \
+      ~Helper()                         \
+      {                                 \
+        SPI.endTransaction();           \
+      }                                 \
+      bool done_;                       \
+    };                                  \
+                                        \
+    bool done() const                   \
+    {                                   \
+      return helper_.done_;             \
+    }                                   \
+    void exec()                         \
+    {                                   \
+      helper_.done_ = true;             \
+    }                                   \
+    Helper helper_;                     \
+  } scope; !scope.done() ; scope.exec())
+
 // Uncomment this line to add detection of mismatched begin/end transactions.
 // A mismatch occurs if other libraries fail to use SPI.endTransaction() for
 // each SPI.beginTransaction().  Connect a LED to this pin.  The LED will turn

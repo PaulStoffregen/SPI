@@ -681,6 +681,8 @@ private:
 /**********************************************************/
 
 #elif defined(__arm__) && defined(TEENSYDUINO) && defined(KINETISL)
+
+#define SPI_HAS_NOTUSINGINTERRUPT 1
 #define SPI_ATOMIC_VERSION 1
 
 class SPISettings {
@@ -1029,6 +1031,8 @@ private:
 /**********************************************************/
 
 #elif defined(__arm__) && defined(TEENSYDUINO) && (defined(__IMXRT1052__) || defined(__IMXRT1062__))
+
+#define SPI_HAS_NOTUSINGINTERRUPT 1
 #define SPI_ATOMIC_VERSION 1
 
 //#include "debug/printf.h"

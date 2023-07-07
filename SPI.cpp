@@ -1547,7 +1547,10 @@ const SPIClass::SPI_Hardware_t  SPIClass::spiclass_lpspi4_hardware = {
 };
 #endif
 
-SPIClass SPI((uintptr_t)&IMXRT_LPSPI4_S, (uintptr_t)&SPIClass::spiclass_lpspi4_hardware);
+//using &IMXRT_LPSPI4_S somehow interferes with constexpr static init, but why?
+//details: https://forum.pjrc.com/threads/73154
+//SPIClass SPI((uintptr_t)&IMXRT_LPSPI4_S, (uintptr_t)&SPIClass::spiclass_lpspi4_hardware);
+SPIClass SPI(IMXRT_LPSPI4_ADDRESS, (uintptr_t)&SPIClass::spiclass_lpspi4_hardware);
 
 #if defined(__IMXRT1062__)
 // T4 has two other possible SPI objects...
@@ -1598,7 +1601,8 @@ const SPIClass::SPI_Hardware_t  SPIClass::spiclass_lpspi3_hardware = {
 	&IOMUXC_LPSPI3_PCS0_SELECT_INPUT
 };
 #endif
-SPIClass SPI1((uintptr_t)&IMXRT_LPSPI3_S, (uintptr_t)&SPIClass::spiclass_lpspi3_hardware);
+//SPIClass SPI1((uintptr_t)&IMXRT_LPSPI3_S, (uintptr_t)&SPIClass::spiclass_lpspi3_hardware);
+SPIClass SPI1(IMXRT_LPSPI3_ADDRESS, (uintptr_t)&SPIClass::spiclass_lpspi3_hardware);
 
 void _spi_dma_rxISR2(void) {SPI2.dma_rxisr();}
 
@@ -1647,7 +1651,8 @@ const SPIClass::SPI_Hardware_t  SPIClass::spiclass_lpspi1_hardware = {
 	&IOMUXC_LPSPI1_PCS0_SELECT_INPUT
 };
 #endif
-SPIClass SPI2((uintptr_t)&IMXRT_LPSPI1_S, (uintptr_t)&SPIClass::spiclass_lpspi1_hardware);
+//SPIClass SPI2((uintptr_t)&IMXRT_LPSPI1_S, (uintptr_t)&SPIClass::spiclass_lpspi1_hardware);
+SPIClass SPI2(IMXRT_LPSPI1_ADDRESS, (uintptr_t)&SPIClass::spiclass_lpspi1_hardware);
 #endif
 
 //SPIClass SPI(&IMXRT_LPSPI4_S, &spiclass_lpspi4_hardware);

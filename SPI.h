@@ -302,6 +302,8 @@ public:
 	inline static void attachInterrupt() { SPCR |= _BV(SPIE); }
 	inline static void detachInterrupt() { SPCR &= ~_BV(SPIE); }
 
+	friend uintptr_t Teensyduino_Test_constinit_SPI(int instance, int index);
+
 private:
 	static uint8_t interruptMode; // 0=none, 1=mask, 2=global
 	static uint8_t interruptMask; // which interrupts to mask
@@ -458,6 +460,7 @@ public:
 	constexpr SPIClass(uintptr_t myport, uintptr_t myhardware)
 		: port_addr(myport), hardware_addr(myhardware) {
 	}
+	friend uintptr_t Teensyduino_Test_constinit_SPI(int instance, int index);
 	// Initialize the SPI library
 	void begin();
 
@@ -824,6 +827,7 @@ public:
 	constexpr SPIClass(uintptr_t myport, uintptr_t myhardware)
 		: port_addr(myport), hardware_addr(myhardware) {
 	}
+	friend uintptr_t Teensyduino_Test_constinit_SPI(int instance, int index);
 	// Initialize the SPI library
 	void begin();
 
@@ -1128,6 +1132,7 @@ public:
 //	constexpr SPIClass(IMXRT_LPSPI_t *myport, const SPI_Hardware_t *myhardware)
 //		: port(myport), hardware(myhardware) {
 //	}
+	friend uintptr_t Teensyduino_Test_constinit_SPI(int instance, int index);
 	// Initialize the SPI library
 	void begin();
 

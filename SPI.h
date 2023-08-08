@@ -48,10 +48,11 @@
 #define MSBFIRST 1
 #endif
 
-#define SPI_MODE0 0x00
-#define SPI_MODE1 0x04
-#define SPI_MODE2 0x08
-#define SPI_MODE3 0x0C
+// SPI Mode details: https://en.wikipedia.org/wiki/Serial_Peripheral_Interface#:~:text=the%20original%20specification.-,Mode%20numbers,-%5Bedit%5D
+#define SPI_MODE0 0x00 // CPOL = 0, CPHA = 0
+#define SPI_MODE1 0x04 // CPOL = 0, CPHA = 1
+#define SPI_MODE2 0x08 // CPOL = 1, CPHA = 0
+#define SPI_MODE3 0x0C // CPOL = 1, CPHA = 1
 
 #define SPI_CLOCK_DIV4 0x00
 #define SPI_CLOCK_DIV16 0x01

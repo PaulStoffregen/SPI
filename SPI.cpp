@@ -211,7 +211,7 @@ const SPIClass::SPI_Hardware_t SPIClass::spi0_hardware = {
 	PORT_PCR_MUX(2),  PORT_PCR_MUX(2), PORT_PCR_MUX(2),  PORT_PCR_MUX(2),  PORT_PCR_MUX(2),  PORT_PCR_MUX(2),  PORT_PCR_MUX(2),  PORT_PCR_MUX(2),  PORT_PCR_MUX(2),
 	0x1, 0x1, 0x2, 0x2, 0x4, 0x4, 0x8, 0x8, 0x10
 };
-SPIClass SPI((uintptr_t)&KINETISK_SPI0, (uintptr_t)&SPIClass::spi0_hardware);
+SPIClass SPI(KINETISK_SPI0_ADDR, (uintptr_t)&SPIClass::spi0_hardware);
 
 #elif defined(__MK64FX512__) || defined(__MK66FX1M0__)
 #ifdef SPI_HAS_TRANSFER_ASYNC
@@ -275,9 +275,9 @@ const SPIClass::SPI_Hardware_t SPIClass::spi2_hardware = {
 	PORT_PCR_MUX(2),  PORT_PCR_MUX(2),  PORT_PCR_MUX(2),  0,  0,  0,  0,  0,  0,   0,   0,
 	0x1, 0x2, 0x1, 0, 0, 0, 0, 0, 0, 0, 0
 };
-SPIClass SPI((uintptr_t)&KINETISK_SPI0, (uintptr_t)&SPIClass::spi0_hardware);
-SPIClass SPI1((uintptr_t)&KINETISK_SPI1, (uintptr_t)&SPIClass::spi1_hardware);
-SPIClass SPI2((uintptr_t)&KINETISK_SPI2, (uintptr_t)&SPIClass::spi2_hardware);
+SPIClass SPI(KINETISK_SPI0_ADDR, (uintptr_t)&SPIClass::spi0_hardware);
+SPIClass SPI1(KINETISK_SPI1_ADDR, (uintptr_t)&SPIClass::spi1_hardware);
+SPIClass SPI2(KINETISK_SPI2_ADDR, (uintptr_t)&SPIClass::spi2_hardware);
 #endif
 
 
@@ -928,7 +928,7 @@ const SPIClass::SPI_Hardware_t SPIClass::spi0_hardware = {
 	PORT_PCR_MUX(2),  PORT_PCR_MUX(2),
 	0x1, 0x1
 };
-SPIClass SPI((uintptr_t)&KINETISL_SPI0, (uintptr_t)&SPIClass::spi0_hardware);
+SPIClass SPI(KINETISL_SPI0_ADDR, (uintptr_t)&SPIClass::spi0_hardware);
 
 const SPIClass::SPI_Hardware_t SPIClass::spi1_hardware = {
 	SIM_SCGC4, SIM_SCGC4_SPI1,
@@ -944,7 +944,7 @@ const SPIClass::SPI_Hardware_t SPIClass::spi1_hardware = {
 	PORT_PCR_MUX(2),  0,
 	0x1, 0
 };
-SPIClass SPI1((uintptr_t)&KINETISL_SPI1, (uintptr_t)&SPIClass::spi1_hardware);
+SPIClass SPI1(KINETISL_SPI1_ADDR, (uintptr_t)&SPIClass::spi1_hardware);
 
 
 void SPIClass::begin()

@@ -1296,8 +1296,7 @@ public:
 
 	// Asynch support (DMA )
 #ifdef SPI_HAS_TRANSFER_ASYNC
-	bool transfer(const void *txBuffer, void *rxBuffer, size_t count,  EventResponderRef  event_responder);
-
+	bool transfer(const void *txBuffer, void *rxBuffer, size_t count,  EventResponderRef  event_responder, uint8_t framesize=7);
 	friend void _spi_dma_rxISR0(void);
 	inline void dma_rxisr(void);
 #endif

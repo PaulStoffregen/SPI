@@ -794,7 +794,7 @@ bool SPIClass::transfer(const void *buf, void *retbuf, size_t count, EventRespon
 	uint8_t *write_data = (uint8_t*) buf;
 	if (buf) {
 		dma_first_byte = *write_data;
-		_dmaTX->sourceBuffer((uint8_t*)write_data+1, count-1);  
+		_dmaTX->sourceBuffer((uint8_t*)write_data+1, count-1);
 		_dmaTX->TCD->SLAST = 0;	// Finish with it pointing to next location
 	} else {
 		dma_first_byte = _transferWriteFill;
@@ -1901,7 +1901,7 @@ void dumpDMA_TCD(DMABaseClass *dmabc)
 }
 #endif
 
-bool SPIClass::transfer(const void *buf, void *retbuf, size_t count, EventResponderRef event_responder) {
+bool SPIClass::transfer(const void *buf, void *retbuf, size_t count, EventResponderRef event_responder, uint8_t framesize) {
 	if (_dma_state == DMAState::notAllocated) {
 		if (!initDMAChannels())
 			return false;
@@ -1929,26 +1929,75 @@ bool SPIClass::transfer(const void *buf, void *retbuf, size_t count, EventRespon
 		_dma_count_remaining = 0;
 	}
 
-	// Now See if caller passed in a source buffer. 
-	_dmaTX->TCD->ATTR_DST = 0;		// Make sure set for 8 bit mode
-	uint8_t *write_data = (uint8_t*) buf;
-	if (buf) {
-		_dmaTX->sourceBuffer((uint8_t*)write_data, count);  
-		_dmaTX->TCD->SLAST = 0;	// Finish with it pointing to next location
+	if (framesize <= 7) {
+		// Now See if caller passed in a source buffer.
+		_dmaTX->TCD->ATTR_DST = 0;		// Make sure set for 8 bit mode
+		uint8_t *write_data = (uint8_t*) buf;
+		if (buf) {
+			_dmaTX->sourceBuffer((uint8_t*)write_data, count);
+			_dmaTX->TCD->SLAST = 0;	// Finish with it pointing to next location
+		} else {
+			_dmaTX->source((uint8_t&)_transferWriteFill);   // maybe have setable value
+			DMAChanneltransferCount(_dmaTX, count);
+		}
+		if (retbuf) {
+			// On T3.5 must handle SPI1/2 differently as only one DMA channel
+			_dmaRX->TCD->ATTR_SRC = 0;		//Make sure set for 8 bit mode...
+			_dmaRX->destinationBuffer((uint8_t*)retbuf, count);
+			_dmaRX->TCD->DLASTSGA = 0;		// At end point after our bufffer
+		} else {
+				// Write  only mode
+			_dmaRX->TCD->ATTR_SRC = 0;		//Make sure set for 8 bit mode...
+			_dmaRX->destination((uint8_t&)bit_bucket);
+			DMAChanneltransferCount(_dmaRX, count);
+		}
+	}
+	else if (framesize < 16) {
+		_dmaTX->TCD->ATTR_DST = 1;		// Make sure set for 16-bit mode
+		uint16_t *write_data = (uint16_t*) buf;
+		if (buf) {
+			_dmaTX->sourceBuffer((uint16_t*)write_data, count);
+			_dmaTX->TCD->SLAST = 0;	// Finish with it pointing to next location
+		} else {
+			_dmaTX->source((uint16_t&)_transferWriteFill);   // maybe have setable value
+			DMAChanneltransferCount(_dmaTX, count);
+		}
+		if (retbuf) {
+			// On T3.5 must handle SPI1/2 differently as only one DMA channel
+			_dmaRX->TCD->ATTR_SRC = 1;		//Make sure set for 16 bit mode...
+			_dmaRX->destinationBuffer((uint16_t*)retbuf, count);
+			_dmaRX->TCD->DLASTSGA = 0;		// At end point after our bufffer
+		} else {
+				// Write  only mode
+			_dmaRX->TCD->ATTR_SRC = 1;		//Make sure set for 16 bit mode...
+			_dmaRX->destination((uint16_t&)bit_bucket);
+			DMAChanneltransferCount(_dmaRX, count);
+		}
+	}
+	else if (framesize < 32) {
+		_dmaTX->TCD->ATTR_DST = 2;		// Make sure set for 32-bit mode
+		uint32_t *write_data = (uint32_t*) buf;
+		if (buf) {
+			_dmaTX->sourceBuffer((uint32_t*)write_data, count);
+			_dmaTX->TCD->SLAST = 0;	// Finish with it pointing to next location
+		} else {
+			_dmaTX->source((uint32_t&)_transferWriteFill);   // maybe have setable value
+			DMAChanneltransferCount(_dmaTX, count);
+		}
+		if (retbuf) {
+			// On T3.5 must handle SPI1/2 differently as only one DMA channel
+			_dmaRX->TCD->ATTR_SRC = 2;		//Make sure set for 32 bit mode...
+			_dmaRX->destinationBuffer((uint32_t*)retbuf, count);
+			_dmaRX->TCD->DLASTSGA = 0;		// At end point after our bufffer
+		} else {
+				// Write  only mode
+			_dmaRX->TCD->ATTR_SRC = 2;		//Make sure set for 32 bit mode...
+			_dmaRX->destination((uint32_t&) bit_bucket);
+			DMAChanneltransferCount(_dmaRX, count);
+		}
 	} else {
-		_dmaTX->source((uint8_t&)_transferWriteFill);   // maybe have setable value
-		DMAChanneltransferCount(_dmaTX, count);
-	}	
-	if (retbuf) {
-		// On T3.5 must handle SPI1/2 differently as only one DMA channel
-		_dmaRX->TCD->ATTR_SRC = 0;		//Make sure set for 8 bit mode...
-		_dmaRX->destinationBuffer((uint8_t*)retbuf, count);
-		_dmaRX->TCD->DLASTSGA = 0;		// At end point after our bufffer
-	} else {
-			// Write  only mode
-		_dmaRX->TCD->ATTR_SRC = 0;		//Make sure set for 8 bit mode...
-		_dmaRX->destination((uint8_t&)bit_bucket);
-		DMAChanneltransferCount(_dmaRX, count);
+		// invalid framesize
+		return false;
 	}
 
 	_dma_event_responder = &event_responder;
@@ -1963,7 +2012,7 @@ bool SPIClass::transfer(const void *buf, void *retbuf, size_t count, EventRespon
 #endif
 
 	// Make sure port is in 8 bit mode and clear watermark
-	port().TCR = (port().TCR & ~(LPSPI_TCR_FRAMESZ(31))) | LPSPI_TCR_FRAMESZ(7);	
+	port().TCR = (port().TCR & ~(LPSPI_TCR_FRAMESZ(31))) | LPSPI_TCR_FRAMESZ(framesize);
 	port().FCR = 0; 
 
 	// Lets try to output the first byte to make sure that we are in 8 bit mode...

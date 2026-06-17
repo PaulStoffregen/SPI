@@ -77,7 +77,7 @@ void loop() {
     //Read the pressure data lower 16 bits:
     unsigned int pressure_data_low = readRegister(0x20, 2);
     //combine the two parts into one 19-bit number:
-    long pressure = ((pressure_data_high << 16) | pressure_data_low)/4;
+    long pressure = (((long) pressure_data_high << 16) | pressure_data_low)/4;
 
     // display the temperature:
     Serial.println("\tPressure [Pa]=" + String(pressure));
@@ -150,4 +150,3 @@ void writeRegister(byte thisRegister, byte thisValue) {
   // release control of the SPI port
   SPI.endTransaction();
 }
-
